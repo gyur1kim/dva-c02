@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS IAM 시험 대비 핵심 개념 정리</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.22.0/dist/tabler-icons.min.css">
+
+  <style>
+    /* ── Light mode tokens ── */
+    :root {
+      --bg-page:                  #f5f7fa;
+      --color-background-primary: #ffffff;
+      --color-background-secondary:#f1f3f6;
+      --color-text-primary:       #111827;
+      --color-text-secondary:     #6b7280;
+      --color-text-tertiary:      #9ca3af;
+      --color-border-tertiary:    rgba(0,0,0,0.11);
+      --color-border-secondary:   rgba(0,0,0,0.2);
+      --color-background-warning: #fffbeb;
+      --color-text-warning:       #92400e;
+      --color-border-warning:     #f59e0b;
+      --color-background-info:    #eff6ff;
+      --color-text-info:          #1d4ed8;
+      --color-border-info:        #93c5fd;
+      --color-background-success: #f0fdf4;
+      --color-text-success:       #15803d;
+      --color-border-success:     #86efac;
+      --color-background-danger:  #fef2f2;
+      --color-text-danger:        #b91c1c;
+      --color-border-danger:      #fca5a5;
+      --border-radius-md:         8px;
+      --border-radius-lg:         12px;
+    }
+
+    /* ── Dark mode tokens ── */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-page:                  #0d0d17;
+        --color-background-primary: #1a1a2e;
+        --color-background-secondary:#242438;
+        --color-text-primary:       #e2e8f0;
+        --color-text-secondary:     #94a3b8;
+        --color-text-tertiary:      #64748b;
+        --color-border-tertiary:    rgba(255,255,255,0.09);
+        --color-border-secondary:   rgba(255,255,255,0.18);
+        --color-background-warning: rgba(251,191,36,0.1);
+        --color-text-warning:       #fbbf24;
+        --color-border-warning:     rgba(251,191,36,0.45);
+        --color-background-info:    rgba(59,130,246,0.1);
+        --color-text-info:          #60a5fa;
+        --color-border-info:        rgba(59,130,246,0.35);
+        --color-background-success: rgba(34,197,94,0.08);
+        --color-text-success:       #4ade80;
+        --color-border-success:     rgba(34,197,94,0.3);
+        --color-background-danger:  rgba(239,68,68,0.08);
+        --color-text-danger:        #f87171;
+        --color-border-danger:      rgba(239,68,68,0.3);
+      }
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-page);
+      color: var(--color-text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 28px 20px 60px;
+      min-height: 100vh;
+    }
+
+    .container { max-width: 700px; margin: 0 auto; }
+
+    /* ── Page header ── */
+    .page-badge {
+      display: inline-block;
+      background: var(--color-background-warning);
+      color: var(--color-text-warning);
+      border: 0.5px solid var(--color-border-warning);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 100px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .page-title {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: 4px;
+    }
+    .page-sub {
+      font-size: 13px;
+      color: var(--color-text-tertiary);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab {
+      background: transparent;
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      padding: 7px 15px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .tab.on {
+      background: var(--color-background-warning);
+      color: var(--color-text-warning);
+      border-color: var(--color-border-warning);
+      font-weight: 500;
+    }
+    .tab:hover:not(.on) {
+      background: var(--color-background-secondary);
+      color: var(--color-text-primary);
+    }
+
+    /* ── Panes ── */
+    .pane { display: none; }
+    .pane.on { display: block; }
+
+    /* ── Concept grid ── */
+    .cg { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+    .cc {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 15px 17px;
+    }
+    .cc-icon {
+      width: 30px; height: 30px;
+      border-radius: var(--border-radius-md);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .cc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .cc-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+    .cc-body { font-size: 12.5px; color: var(--color-text-secondary); line-height: 1.9; }
+    .cc-body p { margin: 0 0 2px; }
+    .cc-body p:last-child { margin-bottom: 0; }
+
+    /* ── Q&A ── */
+    .qa {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      overflow: hidden;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .qa.on { border-color: var(--color-border-warning); }
+    .qa-head { display: flex; align-items: flex-start; gap: 10px; padding: 13px 14px; }
+    .qa-num {
+      min-width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 500;
+      flex-shrink: 0;
+    }
+    .qa-q { font-size: 13.5px; color: var(--color-text-primary); line-height: 1.4; margin: 0 0 5px; }
+    .qa-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 100px;
+      display: inline-block;
+    }
+    .qa-chev { font-size: 15px; color: var(--color-text-tertiary); flex-shrink: 0; margin-top: 3px; transition: transform 0.2s; }
+    .qa.on .qa-chev { transform: rotate(180deg); }
+    .qa-b { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
+    .qa.on .qa-b { max-height: 600px; }
+    .qa-ans {
+      padding: 12px 14px 14px 46px;
+      border-top: 0.5px solid var(--color-border-tertiary);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .qa-ans p { margin: 0 0 2px; }
+    .qa-ans p:last-child { margin-bottom: 0; }
+
+    /* ── Summary ── */
+    .s-section { margin-bottom: 20px; }
+    .s-label {
+      font-size: 11.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 9px;
+    }
+    .sm {
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      padding: 9px 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .sm-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 7px;
+    }
+    .sm span { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+
+    /* ── Reveal btn ── */
+    #rev-btn {
+      background: transparent;
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    #rev-btn:hover { background: var(--color-background-secondary); }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0;
+      margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h2 class="sr-only">AWS IAM 시험 대비 핵심 개념 정리 — 인터랙티브 학습 가이드</h2>
+
+  <div>
+    <div class="page-badge">AWS Certification</div>
+    <h1 class="page-title">IAM — Identity &amp; Access Management</h1>
+    <p class="page-sub">시험 대비 핵심 개념 정리</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="t-c" onclick="sw('c')"><i class="ti ti-book-2" aria-hidden="true"></i> 핵심 개념</button>
+    <button class="tab" id="t-q" onclick="sw('q')"><i class="ti ti-clipboard-list" aria-hidden="true"></i> 시험 Q&amp;A</button>
+    <button class="tab" id="t-s" onclick="sw('s')"><i class="ti ti-bolt" aria-hidden="true"></i> 빠른 요약</button>
+  </div>
+
+  <!-- ══════════════════ CONCEPTS ══════════════════ -->
+  <div class="pane on" id="p-c">
+    <div class="cg">
+
+      <div class="cc">
+        <div class="cc-head">
+          <span class="cc-icon" style="background:var(--color-background-warning);">
+            <i class="ti ti-lock" style="font-size:15px;color:var(--color-text-warning);" aria-hidden="true"></i>
+          </span>
+          <span class="cc-title">IAM 개요</span>
+        </div>
+        <div class="cc-body">
+          <p><strong style="font-weight:500;color:var(--color-text-warning);">Identity and Access Management</strong></p>
+          <p>AWS 계정의 인증(Auth·N)과 인가(Auth·Z) 관리</p>
+          <p><span style="color:var(--color-text-success);">글로벌 서비스</span> — 리전에 종속되지 않음</p>
+          <p>처음 생성 계정 = 루트 계정 (Root Account)</p>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head">
+          <span class="cc-icon" style="background:var(--color-background-info);">
+            <i class="ti ti-users" style="font-size:15px;color:var(--color-text-info);" aria-hidden="true"></i>
+          </span>
+          <span class="cc-title">구성요소</span>
+        </div>
+        <div class="cc-body">
+          <p><strong style="font-weight:500;color:var(--color-text-info);">Users</strong> — 실제 사람이나 서비스를 나타냄</p>
+          <p><strong style="font-weight:500;color:var(--color-text-info);">Groups</strong> — 사용자의 집합 <span style="color:var(--color-text-danger);">(다른 그룹 포함 불가!)</span></p>
+          <p><strong style="font-weight:500;color:var(--color-text-info);">Roles</strong> — AWS 서비스에 임시 권한 부여</p>
+          <p><strong style="font-weight:500;color:var(--color-text-info);">Policies</strong> — 권한을 JSON 형식으로 정의</p>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head">
+          <span class="cc-icon" style="background:var(--color-background-secondary);">
+            <i class="ti ti-file-code" style="font-size:15px;color:var(--color-text-secondary);" aria-hidden="true"></i>
+          </span>
+          <span class="cc-title">Policy 구조</span>
+        </div>
+        <div class="cc-body">
+          <p>
+            <strong style="font-weight:500;color:var(--color-text-primary);">Version</strong>
+            <span style="background:var(--color-background-danger);color:var(--color-text-danger);font-size:10.5px;padding:1px 6px;border-radius:4px;">문서 레벨</span>
+            — Statement에 포함 ✗
+          </p>
+          <p><strong style="font-weight:500;color:var(--color-text-primary);">Statement</strong> (Effect, Action, Resource,</p>
+          <p style="padding-left:12px;">Principal, Condition, Sid)</p>
+          <p style="color:var(--color-text-tertiary);">종류: AWS Managed · Customer Managed · Inline</p>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head">
+          <span class="cc-icon" style="background:var(--color-background-success);">
+            <i class="ti ti-shield-check" style="font-size:15px;color:var(--color-text-success);" aria-hidden="true"></i>
+          </span>
+          <span class="cc-title">공동 책임 모델</span>
+        </div>
+        <div class="cc-body">
+          <p style="color:var(--color-text-warning);font-weight:500;">AWS 책임 — Security OF the Cloud</p>
+          <p style="margin-bottom:6px !important;">물리적 보안, 하드웨어·네트워크 인프라, IAM 서비스 운영</p>
+          <p style="color:var(--color-text-success);font-weight:500;">고객 책임 — Security IN the Cloud</p>
+          <p>IAM 사용자·그룹 생성, 정책 설정, MFA 활성화</p>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head">
+          <span class="cc-icon" style="background:var(--color-background-warning);">
+            <i class="ti ti-search" style="font-size:15px;color:var(--color-text-warning);" aria-hidden="true"></i>
+          </span>
+          <span class="cc-title">IAM 보안 도구</span>
+        </div>
+        <div class="cc-body">
+          <p><strong style="font-weight:500;color:var(--color-text-primary);">Credentials Report</strong></p>
+          <p style="color:var(--color-text-tertiary);margin-bottom:7px !important;">계정 레벨 — 전체 사용자 자격 증명 현황 CSV</p>
+          <p><strong style="font-weight:500;color:var(--color-text-primary);">Access Advisor</strong></p>
+          <p style="color:var(--color-text-tertiary);">사용자 레벨 — 서비스별 마지막 접근 시간 확인</p>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head">
+          <span class="cc-icon" style="background:var(--color-background-success);">
+            <i class="ti ti-star" style="font-size:15px;color:var(--color-text-success);" aria-hidden="true"></i>
+          </span>
+          <span class="cc-title">IAM 모범 사례</span>
+        </div>
+        <div class="cc-body">
+          <p>루트 계정 MFA 활성화 <span style="color:var(--color-text-danger);">(최우선!)</span></p>
+          <p>루트 계정 일상 사용 금지</p>
+          <p>최소 권한 원칙 (Least Privilege) 적용</p>
+          <p>그룹으로 권한 관리</p>
+          <p>액세스 키 주기적 교체</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════ Q&A ══════════════════ -->
+  <div class="pane" id="p-q">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button id="rev-btn" onclick="revAll()">
+        <i class="ti ti-eye" aria-hidden="true"></i> 모두 보기
+      </button>
+    </div>
+
+    <!-- Q1 -->
+    <div class="qa" id="qa1" onclick="tog('qa1')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-success);color:var(--color-text-success);">1</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">AWS Shared Responsibility Model에 따르면 AWS의 책임은?</p>
+          <span class="qa-tag" style="background:var(--color-background-success);color:var(--color-text-success);">공동 책임 모델</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="font-weight:500;color:var(--color-text-warning);margin-bottom:4px !important;">AWS 책임 — Security OF the Cloud</p>
+          <p style="color:var(--color-text-secondary);">• 물리적 데이터 센터 보안</p>
+          <p style="color:var(--color-text-secondary);">• 하드웨어, 네트워크 인프라 운영</p>
+          <p style="color:var(--color-text-secondary);margin-bottom:8px !important;">• IAM 서비스 자체 운영·유지보수</p>
+          <p style="color:var(--color-text-tertiary);">고객 책임: IAM 사용자·그룹 생성, 정책 설정, MFA 활성화</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="qa" id="qa2" onclick="tog('qa2')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-warning);color:var(--color-text-warning);">2</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">IAM 정책의 Statement(문)을 구성하지 않는 요소는?</p>
+          <span class="qa-tag" style="background:var(--color-background-warning);color:var(--color-text-warning);">정책 구조</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="font-weight:500;color:var(--color-text-danger);margin-bottom:6px !important;">정답: Version (버전)</p>
+          <p style="color:var(--color-text-secondary);">Version은 정책 <strong style="font-weight:500;">문서(document)</strong> 레벨의 요소입니다. 개별 Statement에 포함되지 않습니다.</p>
+          <p style="color:var(--color-text-tertiary);margin-top:4px !important;">Statement 요소: Effect · Action · Resource · Principal · Condition · Sid(선택)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="qa" id="qa3" onclick="tog('qa3')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-danger);color:var(--color-text-danger);">3</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">루트 계정 보안을 높이려면 어떻게 해야 할까요?</p>
+          <span class="qa-tag" style="background:var(--color-background-danger);color:var(--color-text-danger);">보안</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="font-weight:500;color:var(--color-text-warning);margin-bottom:4px !important;">MFA (다단계 인증) 활성화 — 핵심 정답</p>
+          <p style="color:var(--color-text-secondary);">• 루트 계정에 MFA 반드시 설정</p>
+          <p style="color:var(--color-text-secondary);">• 일상 업무에 루트 계정 사용 금지</p>
+          <p style="color:var(--color-text-secondary);">• 루트 자격 증명 절대 공유 금지</p>
+          <p style="color:var(--color-text-secondary);">• 루트 액세스 키 생성 자제</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="qa" id="qa4" onclick="tog('qa4')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-info);color:var(--color-text-info);">4</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">다음 중 IAM 정책의 종류는?</p>
+          <span class="qa-tag" style="background:var(--color-background-info);color:var(--color-text-info);">정책 종류</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="color:var(--color-text-secondary);"><strong style="font-weight:500;color:var(--color-text-primary);">AWS Managed Policy</strong> — AWS가 미리 생성·관리</p>
+          <p style="color:var(--color-text-secondary);"><strong style="font-weight:500;color:var(--color-text-primary);">Customer Managed Policy</strong> — 고객이 직접 생성·관리</p>
+          <p style="color:var(--color-text-secondary);margin-bottom:8px !important;"><strong style="font-weight:500;color:var(--color-text-primary);">Inline Policy</strong> — 특정 사용자/그룹/역할에 1:1 직접 연결</p>
+          <p style="color:var(--color-text-tertiary);">모두 JSON 형식으로 작성됩니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="qa" id="qa5" onclick="tog('qa5')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-info);color:var(--color-text-info);">5</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">다음 중 IAM 모범 사례(Best Practice)는?</p>
+          <span class="qa-tag" style="background:var(--color-background-info);color:var(--color-text-info);">모범 사례</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="color:var(--color-text-secondary);">• 루트 계정 MFA 활성화</p>
+          <p style="color:var(--color-text-secondary);">• 루트 계정 일상 사용 금지</p>
+          <p style="color:var(--color-text-secondary);">• 사용자별 개별 IAM 계정 생성 (공유 금지)</p>
+          <p style="color:var(--color-text-secondary);">• 그룹을 통한 권한 관리 (사용자에 직접 정책 부여 지양)</p>
+          <p style="color:var(--color-text-secondary);">• 최소 권한 원칙 적용</p>
+          <p style="color:var(--color-text-secondary);">• 액세스 키 주기적 교체 및 불필요 키 삭제</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="qa" id="qa6" onclick="tog('qa6')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-warning);color:var(--color-text-warning);">6</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">IAM 사용자와 관련하여 잘못된 것은?</p>
+          <span class="qa-tag" style="background:var(--color-background-warning);color:var(--color-text-warning);">사용자</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="color:var(--color-text-danger);font-weight:500;margin-bottom:6px !important;">✗ 잘못된 것: "IAM 사용자는 반드시 하나의 그룹에만 속해야 한다"</p>
+          <p style="color:var(--color-text-secondary);font-weight:500;margin-bottom:4px !important;">올바른 사실:</p>
+          <p style="color:var(--color-text-secondary);">• 사용자는 여러 그룹에 동시에 속할 수 있음</p>
+          <p style="color:var(--color-text-secondary);">• 사용자는 어떤 그룹에도 속하지 않을 수 있음</p>
+          <p style="color:var(--color-text-secondary);">• 사용자에게 직접 정책을 부여할 수도 있음</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="qa" id="qa7" onclick="tog('qa7')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-warning);color:var(--color-text-warning);">7</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">다음 중 IAM 보안 도구는 무엇일까요?</p>
+          <span class="qa-tag" style="background:var(--color-background-warning);color:var(--color-text-warning);">보안 도구</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="font-weight:500;color:var(--color-text-primary);">Credentials Report (자격 증명 보고서)</p>
+          <p style="color:var(--color-text-tertiary);margin-bottom:8px !important;">계정 레벨 — 모든 사용자 자격 증명 현황을 CSV로 다운로드</p>
+          <p style="font-weight:500;color:var(--color-text-primary);">Access Advisor (액세스 관리자)</p>
+          <p style="color:var(--color-text-tertiary);">사용자 레벨 — 서비스별 마지막 접근 시간, 불필요 권한 식별</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="qa" id="qa8" onclick="tog('qa8')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-danger);color:var(--color-text-danger);">8</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">IAM 사용자 그룹에는 IAM 사용자 및 기타 사용자 그룹이 포함될 수 있다. (True / False)</p>
+          <span class="qa-tag" style="background:var(--color-background-danger);color:var(--color-text-danger);">O/X 문제</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="color:var(--color-text-danger);font-size:15px;font-weight:500;margin-bottom:6px !important;">✗ False</p>
+          <p style="color:var(--color-text-secondary);">IAM 그룹에는 <strong style="font-weight:500;">IAM 사용자만</strong> 포함 가능합니다.</p>
+          <p style="color:var(--color-text-secondary);margin-bottom:4px !important;">다른 그룹(중첩 그룹)은 포함할 수 없습니다.</p>
+          <p style="color:var(--color-text-success);">그룹 → 사용자 ✅</p>
+          <p style="color:var(--color-text-danger);">그룹 → 그룹 &nbsp; ✗</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="qa" id="qa9" onclick="tog('qa9')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-success);color:var(--color-text-success);">9</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">IAM 권한과 관련하여 어떤 원칙을 적용해야 할까요?</p>
+          <span class="qa-tag" style="background:var(--color-background-success);color:var(--color-text-success);">원칙</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="font-weight:500;color:var(--color-text-success);margin-bottom:4px !important;">최소 권한 원칙 (Principle of Least Privilege)</p>
+          <p style="color:var(--color-text-secondary);">• 작업 수행에 필요한 최소한의 권한만 부여</p>
+          <p style="color:var(--color-text-secondary);">• 불필요하게 광범위한 권한 부여 금지</p>
+          <p style="color:var(--color-text-secondary);">• 필요에 따라 점진적으로 권한 추가</p>
+          <p style="color:var(--color-text-tertiary);margin-top:4px !important;">Access Advisor로 실제 사용 권한 검토 후 정리</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="qa" id="qa10" onclick="tog('qa10')">
+      <div class="qa-head">
+        <span class="qa-num" style="background:var(--color-background-info);color:var(--color-text-info);">10</span>
+        <div style="flex:1;min-width:0;">
+          <p class="qa-q">IAM 역할(Role)의 올바른 설명은?</p>
+          <span class="qa-tag" style="background:var(--color-background-info);color:var(--color-text-info);">역할</span>
+        </div>
+        <i class="ti ti-chevron-down qa-chev" aria-hidden="true"></i>
+      </div>
+      <div class="qa-b">
+        <div class="qa-ans">
+          <p style="font-weight:500;color:var(--color-text-info);margin-bottom:4px !important;">AWS 서비스나 외부 엔티티에 임시 권한을 부여하는 메커니즘</p>
+          <p style="color:var(--color-text-secondary);">• EC2 인스턴스, Lambda 함수 등 AWS 서비스에 권한 부여</p>
+          <p style="color:var(--color-text-secondary);">• 영구 자격 증명 없이 임시 보안 자격 증명(STS) 발급</p>
+          <p style="color:var(--color-text-secondary);">• 예: EC2 인스턴스가 S3에 접근할 때 역할 사용</p>
+          <p style="color:var(--color-text-tertiary);margin-top:4px !important;">Cross-account 접근도 역할(Role)로 구현</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════ SUMMARY ══════════════════ -->
+  <div class="pane" id="p-s">
+
+    <div class="s-section">
+      <p class="s-label" style="color:var(--color-text-warning);">핵심 기억사항</p>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-warning);"></div><span>루트 계정은 초기 설정 후 MFA 즉시 활성화, 이후 사용 자제</span></div>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-warning);"></div><span>IAM 그룹에는 사용자만 포함 가능 — 다른 그룹(중첩) 포함 불가</span></div>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-warning);"></div><span><strong style="font-weight:500;">Version</strong>은 정책 문서 레벨 요소, 개별 Statement에 포함 안 됨</span></div>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-warning);"></div><span>IAM은 글로벌 서비스 — 리전 무관</span></div>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-warning);"></div><span>사용자는 여러 그룹 소속 가능 / 그룹 미소속도 가능</span></div>
+    </div>
+
+    <div class="s-section">
+      <p class="s-label" style="color:var(--color-text-info);">IAM 보안 도구</p>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-info);"></div><span><strong style="font-weight:500;">Credentials Report</strong> — 계정 전체 사용자 자격 증명 현황 CSV</span></div>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-info);"></div><span><strong style="font-weight:500;">Access Advisor</strong> — 사용자별 서비스 접근 이력, 마지막 사용 시간</span></div>
+    </div>
+
+    <div class="s-section">
+      <p class="s-label" style="color:var(--color-text-success);">공동 책임 모델</p>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-success);"></div><span><strong style="font-weight:500;">AWS 책임:</strong> 인프라, 데이터 센터, IAM 서비스 운영</span></div>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-success);"></div><span><strong style="font-weight:500;">고객 책임:</strong> IAM 사용자 관리, 정책 설정, MFA, 키 교체</span></div>
+    </div>
+
+    <div class="s-section">
+      <p class="s-label" style="color:var(--color-text-secondary);">정책 &amp; 역할 핵심</p>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-secondary);"></div><span>정책 종류: AWS Managed · Customer Managed · Inline (모두 JSON)</span></div>
+      <div class="sm"><div class="sm-dot" style="background:var(--color-text-secondary);"></div><span>역할은 AWS 서비스에 임시 자격 증명(STS)을 통해 권한 부여</span></div>
+    </div>
+
+  </div>
+
+</div><!-- /.container -->
+
+<script>
+  function sw(t) {
+    ['c', 'q', 's'].forEach(i => {
+      document.getElementById('p-' + i).classList.toggle('on', i === t);
+      document.getElementById('t-' + i).classList.toggle('on', i === t);
+    });
+  }
+  function tog(id) {
+    document.getElementById(id).classList.toggle('on');
+  }
+  function revAll() {
+    const btn = document.getElementById('rev-btn');
+    const all = [...document.querySelectorAll('.qa')];
+    const anyOpen = all.some(el => el.classList.contains('on'));
+    all.forEach(el => el.classList[anyOpen ? 'remove' : 'add']('on'));
+    btn.innerHTML = anyOpen
+      ? '<i class="ti ti-eye" aria-hidden="true"></i> 모두 보기'
+      : '<i class="ti ti-eye-off" aria-hidden="true"></i> 모두 접기';
+  }
+</script>
+</body>
+</html>
