@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EC2 핵심 정리 — DVA-C02</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(13,17,23,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #21262d;
+      display: flex; align-items: center; gap: 2px;
+      padding: 0 24px; height: 50px;
+    }
+    .nav-logo {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #FF9900; margin-right: 18px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .nav-logo span { color: #484f58; font-weight: 500; }
+    nav a {
+      color: #8b949e; text-decoration: none; font-size: 12px; font-weight: 500;
+      padding: 5px 10px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    nav a:hover { color: #e6edf3; background: rgba(255,255,255,0.06); }
+
+    /* ─── LAYOUT ─── */
+    .hero { max-width: 940px; margin: 0 auto; padding: 40px 28px 28px; }
+    .container { max-width: 940px; margin: 0 auto; padding: 0 28px 80px; }
+    section { margin-bottom: 60px; scroll-margin-top: 64px; }
+
+    .sec-eyebrow {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #FF9900; margin-bottom: 4px;
+    }
+    .sec-title { font-size: 20px; font-weight: 800; color: #e6edf3; margin-bottom: 4px; }
+    .sec-desc { font-size: 13px; color: #8b949e; margin-bottom: 22px; }
+
+    /* ─── HERO ─── */
+    .hero-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,153,0,0.1); border: 1px solid rgba(255,153,0,0.3);
+      color: #FF9900; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-size: 32px; font-weight: 800; color: #e6edf3;
+      line-height: 1.15; margin-bottom: 10px;
+    }
+    .hero h1 em { color: #FF9900; font-style: normal; }
+    .hero p { font-size: 14px; color: #8b949e; max-width: 500px; line-height: 1.6; }
+    .hero-stats {
+      display: flex; gap: 24px; margin-top: 24px;
+      padding-top: 20px; border-top: 1px solid #21262d; flex-wrap: wrap;
+    }
+    .hero-stat { display: flex; align-items: center; gap: 8px; }
+    .hero-stat .icon { font-size: 16px; }
+    .hero-stat .text { font-size: 12px; color: #8b949e; }
+    .hero-stat .text strong { color: #e6edf3; font-weight: 600; }
+
+    /* ─── HOTEL CARDS ─── */
+    .hotel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(274px, 1fr));
+      gap: 10px; margin-bottom: 28px;
+    }
+    .hcard {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 10px; padding: 16px 16px 14px;
+      position: relative; overflow: hidden;
+    }
+    .hcard::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; border-radius: 10px 10px 0 0;
+    }
+    .hcard.c-blue::before   { background: linear-gradient(90deg,#388bfd,#58a6ff); }
+    .hcard.c-green::before  { background: linear-gradient(90deg,#2ea043,#56d364); }
+    .hcard.c-purple::before { background: linear-gradient(90deg,#8957e5,#bc8cff); }
+    .hcard.c-aws::before    { background: linear-gradient(90deg,#e68a00,#FF9900); }
+    .hcard.c-red::before    { background: linear-gradient(90deg,#da3633,#f85149); }
+    .hcard.c-gray::before   { background: linear-gradient(90deg,#30363d,#484f58); }
+
+    .hcard-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+    .hcard-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; padding: 3px 7px; border-radius: 4px;
+    }
+    .hcard.c-blue .hcard-badge   { background: rgba(88,166,255,0.12); color: #58a6ff; }
+    .hcard.c-green .hcard-badge  { background: rgba(63,185,80,0.12); color: #56d364; }
+    .hcard.c-purple .hcard-badge { background: rgba(163,113,247,0.12); color: #bc8cff; }
+    .hcard.c-aws .hcard-badge    { background: rgba(255,153,0,0.12); color: #FF9900; }
+    .hcard.c-red .hcard-badge    { background: rgba(248,81,73,0.12); color: #f85149; }
+    .hcard.c-gray .hcard-badge   { background: rgba(72,79,88,0.2); color: #8b949e; }
+
+    .discount-pill {
+      font-size: 11px; font-weight: 800; padding: 2px 8px;
+      border-radius: 20px; white-space: nowrap;
+    }
+    .dp-none   { background: rgba(72,79,88,0.2); color: #6e7681; }
+    .dp-72     { background: rgba(63,185,80,0.18); color: #56d364; }
+    .dp-66     { background: rgba(163,113,247,0.18); color: #bc8cff; }
+    .dp-90     { background: rgba(255,153,0,0.2); color: #FF9900; }
+    .dp-var    { background: rgba(88,166,255,0.14); color: #58a6ff; }
+
+    .hcard h3 { font-size: 14px; font-weight: 700; color: #e6edf3; margin-bottom: 8px; }
+
+    .analogy {
+      font-size: 12px; color: #8b949e; font-style: italic;
+      background: rgba(255,255,255,0.03); border-left: 2px solid;
+      padding: 7px 10px; border-radius: 0 6px 6px 0;
+      margin-bottom: 10px; line-height: 1.5;
+    }
+    .hcard.c-blue .analogy   { border-color: rgba(88,166,255,0.5); }
+    .hcard.c-green .analogy  { border-color: rgba(63,185,80,0.5); }
+    .hcard.c-purple .analogy { border-color: rgba(163,113,247,0.5); }
+    .hcard.c-aws .analogy    { border-color: rgba(255,153,0,0.5); }
+    .hcard.c-red .analogy    { border-color: rgba(248,81,73,0.5); }
+    .hcard.c-gray .analogy   { border-color: rgba(72,79,88,0.5); }
+
+    .hcard ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .hcard ul li {
+      font-size: 12px; color: #8b949e;
+      display: flex; gap: 6px; line-height: 1.4; align-items: flex-start;
+    }
+    .hcard ul li .dot { color: #30363d; flex-shrink: 0; margin-top: 1px; }
+
+    /* ─── TABLE ─── */
+    .tbl-wrap { overflow-x: auto; border: 1px solid #30363d; border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: #0d1117; }
+    thead th {
+      padding: 10px 14px; text-align: left;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #6e7681;
+      border-bottom: 1px solid #30363d; white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #21262d; transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 10px 14px; vertical-align: middle; }
+    .td-name { font-weight: 700; color: #e6edf3; font-size: 13px; }
+    .td-sub { font-size: 11px; color: #8b949e; display: block; margin-top: 2px; font-weight: 400; }
+
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 6px; border-radius: 4px; white-space: nowrap; margin: 1px 1px;
+    }
+    .tag-blue   { background: rgba(88,166,255,0.1); color: #58a6ff; }
+    .tag-green  { background: rgba(63,185,80,0.12); color: #56d364; }
+    .tag-purple { background: rgba(163,113,247,0.12); color: #bc8cff; }
+    .tag-aws    { background: rgba(255,153,0,0.12); color: #FF9900; }
+    .tag-red    { background: rgba(248,81,73,0.1); color: #f85149; }
+    .tag-gray   { background: rgba(72,79,88,0.2); color: #8b949e; }
+
+    /* ─── CALLOUT ─── */
+    .callout {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: rgba(255,153,0,0.07); border: 1px solid rgba(255,153,0,0.22);
+      border-radius: 8px; padding: 12px 14px; margin-top: 14px;
+    }
+    .callout .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout .text { font-size: 13px; color: #d29922; line-height: 1.6; }
+    .callout .text strong { color: #FF9900; }
+    .callout-blue {
+      background: rgba(88,166,255,0.07); border-color: rgba(88,166,255,0.22);
+    }
+    .callout-blue .text { color: #79c0ff; }
+    .callout-blue .text strong { color: #58a6ff; }
+
+    /* ─── SECURITY GROUP ─── */
+    .sg-visual {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 10px; padding: 24px; margin-bottom: 16px;
+      text-align: center;
+    }
+    .sg-region {
+      border: 2px dashed rgba(88,166,255,0.25); border-radius: 12px;
+      padding: 20px 20px 16px; display: inline-block; min-width: 340px;
+      max-width: 480px; width: 100%;
+    }
+    .sg-region-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      color: #58a6ff; margin-bottom: 16px;
+    }
+    .sg-box {
+      border: 2px solid rgba(63,185,80,0.3); border-radius: 8px;
+      padding: 14px; background: rgba(63,185,80,0.04); margin-bottom: 8px;
+    }
+    .sg-box-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #3fb950; margin-bottom: 12px;
+    }
+    .sg-ec2-block {
+      display: inline-block;
+      background: rgba(255,153,0,0.1); border: 1px solid rgba(255,153,0,0.35);
+      border-radius: 6px; padding: 8px 20px; margin: 0 6px 8px;
+    }
+    .sg-ec2-label { font-size: 12px; font-weight: 700; color: #FF9900; }
+    .sg-ec2-sub { font-size: 10px; color: #8b949e; margin-top: 2px; }
+    .sg-arrow {
+      display: flex; justify-content: center; gap: 40px; margin: 8px 0;
+      flex-wrap: wrap;
+    }
+    .sg-arr-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .sg-arr-item .arr { font-size: 20px; line-height: 1; }
+    .sg-arr-item .arr-lbl {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .arr-in .arr { color: #58a6ff; }
+    .arr-in .arr-lbl { color: #58a6ff; }
+    .arr-out .arr { color: #3fb950; }
+    .arr-out .arr-lbl { color: #3fb950; }
+
+    .sg-facts-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px;
+    }
+    .sg-fact-card {
+      background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px;
+    }
+    .sg-fact-card h4 {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .sg-fact-card.inbound h4 { color: #58a6ff; }
+    .sg-fact-card.outbound h4 { color: #3fb950; }
+    .sg-fact-card.neutral h4 { color: #bc8cff; }
+    .fact-row {
+      display: flex; gap: 8px; align-items: flex-start; margin-bottom: 7px;
+    }
+    .fact-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+    }
+    .fact-dot.green  { background: #3fb950; }
+    .fact-dot.blue   { background: #58a6ff; }
+    .fact-dot.red    { background: #f85149; }
+    .fact-dot.orange { background: #FF9900; }
+    .fact-dot.purple { background: #bc8cff; }
+    .fact-row p { font-size: 12px; color: #8b949e; line-height: 1.5; }
+    .fact-row p strong { color: #e6edf3; font-weight: 600; }
+
+    /* ─── INSTANCE TYPES ─── */
+    .inst-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(256px, 1fr));
+      gap: 10px;
+    }
+    .inst-card {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 10px; padding: 14px; position: relative; overflow: hidden;
+    }
+    .inst-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 2px; border-radius: 10px 0 0 10px;
+    }
+    .inst-card.general::before    { background: #58a6ff; }
+    .inst-card.compute::before    { background: #f0883e; }
+    .inst-card.memory::before     { background: #bc8cff; }
+    .inst-card.storage::before    { background: #3fb950; }
+    .inst-card.accelerated::before { background: #f85149; }
+
+    .inst-type-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .inst-card.general .inst-type-label    { color: #58a6ff; }
+    .inst-card.compute .inst-type-label    { color: #f0883e; }
+    .inst-card.memory .inst-type-label     { color: #bc8cff; }
+    .inst-card.storage .inst-type-label    { color: #3fb950; }
+    .inst-card.accelerated .inst-type-label { color: #f85149; }
+
+    .inst-card h4 { font-size: 14px; font-weight: 700; color: #e6edf3; margin-bottom: 3px; }
+    .inst-family {
+      font-family: 'Courier New', Courier, monospace; font-size: 11px;
+      color: #484f58; margin-bottom: 8px; letter-spacing: 0.05em;
+    }
+    .inst-uses { font-size: 12px; color: #8b949e; line-height: 1.55; }
+    .inst-exam-tip {
+      margin-top: 9px; padding: 6px 9px;
+      background: rgba(255,153,0,0.07); border-radius: 5px;
+      font-size: 11px; color: #d29922; line-height: 1.4;
+    }
+    .inst-exam-tip strong { color: #FF9900; }
+
+    /* ─── Q&A ─── */
+    .qa-list { display: flex; flex-direction: column; gap: 8px; }
+    details {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 10px; overflow: hidden; transition: border-color 0.2s;
+    }
+    details[open] { border-color: rgba(255,153,0,0.45); }
+    summary {
+      padding: 14px 16px; cursor: pointer;
+      display: flex; align-items: flex-start; gap: 10px; list-style: none;
+      user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::marker { display: none; }
+    .q-num {
+      min-width: 22px; height: 22px; border-radius: 5px;
+      background: rgba(72,79,88,0.2); color: #8b949e;
+      font-size: 10px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px; transition: background 0.2s, color 0.2s;
+    }
+    details[open] .q-num { background: rgba(255,153,0,0.2); color: #FF9900; }
+    .q-text { font-size: 13px; font-weight: 600; color: #e6edf3; flex: 1; line-height: 1.55; }
+    .q-arrow {
+      color: #484f58; flex-shrink: 0; margin-top: 4px;
+      transition: transform 0.2s, color 0.2s; font-size: 10px;
+    }
+    details[open] .q-arrow { transform: rotate(90deg); color: #FF9900; }
+
+    .q-answer { padding: 0 16px 16px 48px; }
+    .a-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: #3fb950; margin-bottom: 6px;
+    }
+    .a-val { font-size: 17px; font-weight: 800; color: #e6edf3; margin-bottom: 8px; line-height: 1.3; }
+    .a-val .hl { color: #FF9900; }
+    .a-val .hl-red { color: #f85149; }
+    .a-val .hl-green { color: #3fb950; }
+    .a-exp { font-size: 13px; color: #8b949e; line-height: 1.65; margin-bottom: 8px; }
+    .a-exp strong { color: #e6edf3; font-weight: 600; }
+    .a-tip {
+      background: rgba(255,153,0,0.07); border: 1px solid rgba(255,153,0,0.2);
+      border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #d29922;
+      line-height: 1.5;
+    }
+    .a-tip strong { color: #FF9900; display: block; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+    .a-note {
+      background: rgba(88,166,255,0.06); border: 1px solid rgba(88,166,255,0.18);
+      border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #79c0ff;
+      line-height: 1.5; margin-top: 6px;
+    }
+    .a-note strong { color: #58a6ff; display: block; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+
+    .code-box {
+      background: #0d1117; border: 1px solid #21262d; border-radius: 7px;
+      padding: 12px 14px; font-family: 'Courier New', Courier, monospace; font-size: 12px;
+      overflow-x: auto; margin-top: 8px; line-height: 1.6;
+    }
+    .code-cm  { color: #6e7681; }
+    .code-kw  { color: #ff7b72; }
+    .code-cmd { color: #7ee787; }
+    .code-str { color: #a5d6ff; }
+
+    /* ─── SECTION DIVIDER ─── */
+    .divider { height: 1px; background: #21262d; margin-bottom: 48px; }
+
+    /* ─── TIP & SUMMARY ─── */
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px; margin-bottom: 20px;
+    }
+    .summary-card {
+      background: #1c2128; border: 1px solid #30363d; border-radius: 10px;
+      padding: 14px 16px; position: relative; overflow: hidden;
+    }
+    .summary-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: linear-gradient(90deg,#e68a00,#FF9900);
+    }
+    .summary-key {
+      font-size: 13px; font-weight: 700; color: #FF9900; margin-bottom: 6px;
+    }
+    .summary-val { font-size: 12px; color: #8b949e; line-height: 1.55; }
+
+    .tip-box {
+      background: #1c2128; border: 1px solid #30363d; border-radius: 10px; padding: 18px 20px;
+    }
+    .tip-header {
+      font-size: 13px; font-weight: 700; color: #FF9900;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .tip-list { list-style: none; display: flex; flex-direction: column; }
+    .tip-list li {
+      font-size: 13px; color: #8b949e; padding: 8px 0;
+      border-bottom: 1px solid #21262d;
+      display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    }
+    .tip-list li:last-child { border-bottom: none; padding-bottom: 0; }
+    .tip-kw {
+      font-weight: 700; color: #e6edf3; white-space: nowrap; flex-shrink: 0;
+    }
+    .tip-arrow { color: #484f58; font-size: 11px; flex-shrink: 0; }
+    .tip-ans { color: #FF9900; font-weight: 600; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 680px) {
+      nav { overflow-x: auto; padding: 0 12px; }
+      nav::-webkit-scrollbar { display: none; }
+      .hero, .container { padding-left: 16px; padding-right: 16px; }
+      .hero h1 { font-size: 24px; }
+      .sg-facts-grid { grid-template-columns: 1fr; }
+      .q-answer { padding-left: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">EC2 <span>/ DVA-C02</span></div>
+  <a href="#pricing">💰 과금 옵션</a>
+  <a href="#sg">🛡️ 보안 그룹</a>
+  <a href="#instances">💻 인스턴스 유형</a>
+  <a href="#qa">📝 시험 문제</a>
+  <a href="#tips">🎯 시험 TIP</a>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-chip">📚 Week 1 · EC2 기초 정리</div>
+  <h1>EC2 핵심 개념 정리<br><em>시험에 나오는 것만</em></h1>
+  <p>과금 옵션, 보안 그룹, 인스턴스 유형 — 실제 시험에 자주 출제되는 개념을 호텔 비유와 함께 정리합니다.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="icon">💰</span><span class="text"><strong>6가지</strong> 구매 옵션</span></div>
+    <div class="hero-stat"><span class="icon">🛡️</span><span class="text"><strong>보안 그룹</strong> 핵심 규칙</span></div>
+    <div class="hero-stat"><span class="icon">💻</span><span class="text"><strong>5가지</strong> 인스턴스 유형</span></div>
+    <div class="hero-stat"><span class="icon">📝</span><span class="text"><strong>11개</strong> 예상 문제</span></div>
+    <div class="hero-stat"><span class="icon">🎯</span><span class="text"><strong>11개</strong> 시험 TIP</span></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ─── SECTION 1: PRICING ─── -->
+  <section id="pricing">
+    <div class="sec-eyebrow">Section 01</div>
+    <div class="sec-title">EC2 구매 옵션 (Purchasing Options)</div>
+    <div class="sec-desc">리조트 호텔에 비유하면 각 옵션의 차이가 한눈에 들어옵니다.</div>
+
+    <!-- HOTEL CARDS -->
+    <div class="hotel-grid">
+
+      <!-- On-Demand -->
+      <div class="hcard c-blue">
+        <div class="hcard-top">
+          <span class="hcard-badge">🏨 On-Demand</span>
+          <span class="discount-pill dp-none">기준 요금</span>
+        </div>
+        <h3>온디맨드 인스턴스</h3>
+        <p class="analogy">"원할 때 리조트에 와서, 정가 그대로 내고 머무는 것 — 예약 없이 체크인, 언제든 체크아웃."</p>
+        <ul>
+          <li><span class="dot">›</span>약정 없음, 초 단위 or 시간 단위 과금</li>
+          <li><span class="dot">›</span>단기·불규칙 워크로드에 적합</li>
+          <li><span class="dot">›</span>처음 AWS를 써보거나 테스트할 때 추천</li>
+          <li><span class="dot">›</span>Linux: 초 단위 / Windows: 시간 단위</li>
+        </ul>
+      </div>
+
+      <!-- Reserved -->
+      <div class="hcard c-green">
+        <div class="hcard-top">
+          <span class="hcard-badge">📅 Reserved</span>
+          <span class="discount-pill dp-72">최대 72% 할인</span>
+        </div>
+        <h3>예약 인스턴스</h3>
+        <p class="analogy">"미리 1년~3년 예약하면 큰 할인 — 체크인 날짜가 정해졌다면 예약이 유리."</p>
+        <ul>
+          <li><span class="dot">›</span>약정기간: <strong>1년 또는 3년</strong> (3년이 더 큰 할인)</li>
+          <li><span class="dot">›</span>Standard RI: 최대 72%, 변경 불가, Marketplace 판매 가능</li>
+          <li><span class="dot">›</span>Convertible RI: 최대 66%, 인스턴스 패밀리/OS 변경 가능</li>
+          <li><span class="dot">›</span>DB, 안정적 장기 워크로드에 최적</li>
+        </ul>
+      </div>
+
+      <!-- Savings Plans -->
+      <div class="hcard c-purple">
+        <div class="hcard-top">
+          <span class="hcard-badge">💳 Savings Plans</span>
+          <span class="discount-pill dp-66">최대 66% 할인</span>
+        </div>
+        <h3>세이빙스 플랜</h3>
+        <p class="analogy">"시간당 일정 금액 약정, 어떤 방 종류든 OK (킹룸, 스위트, 오션뷰) — 방 타입을 자유롭게 바꿀 수 있음."</p>
+        <ul>
+          <li><span class="dot">›</span>약정기간: 1년 또는 3년</li>
+          <li><span class="dot">›</span>Compute Savings: 모든 인스턴스 패밀리·리전 유연 사용</li>
+          <li><span class="dot">›</span>EC2 Instance Savings: 특정 패밀리 내 유연 사용 (최대 72%)</li>
+          <li><span class="dot">›</span>Reserved보다 유연하지만 할인율은 동등</li>
+        </ul>
+      </div>
+
+      <!-- Spot -->
+      <div class="hcard c-aws">
+        <div class="hcard-top">
+          <span class="hcard-badge">⚡ Spot</span>
+          <span class="discount-pill dp-90">최대 90% 할인</span>
+        </div>
+        <h3>스팟 인스턴스</h3>
+        <p class="analogy">"빈 방에 입찰 — 최고가 입찰자가 방을 차지하지만, 호텔이 더 높은 가격 손님이 오면 당신을 언제든 내보낼 수 있음."</p>
+        <ul>
+          <li><span class="dot">›</span><strong>가장 큰 할인</strong>이지만 중단 위험 존재</li>
+          <li><span class="dot">›</span>AWS가 필요 시 2분 경고 후 강제 종료</li>
+          <li><span class="dot">›</span>중단 가능한 배치 작업, ML 학습, 데이터 분석에 적합</li>
+          <li><span class="dot">›</span>중요 DB, 프로덕션 서버에는 절대 사용 금지</li>
+        </ul>
+      </div>
+
+      <!-- Dedicated Hosts -->
+      <div class="hcard c-red">
+        <div class="hcard-top">
+          <span class="hcard-badge">🏢 Dedicated Hosts</span>
+          <span class="discount-pill dp-var">RI 시 최대 70%</span>
+        </div>
+        <h3>전용 호스트</h3>
+        <p class="analogy">"리조트의 건물 전체를 통째로 빌리는 것 — 누가 몇 층 몇 호에 있는지 전부 내가 관리."</p>
+        <ul>
+          <li><span class="dot">›</span>물리적 서버 전체를 단독 사용</li>
+          <li><span class="dot">›</span>소켓·코어·VM 가시성 확보 → BYOL 라이선스에 필수</li>
+          <li><span class="dot">›</span>엄격한 규정 준수(Compliance) 요구 사항 충족</li>
+          <li><span class="dot">›</span>On-Demand 또는 Reserved(1·3년) 방식으로 구매</li>
+        </ul>
+      </div>
+
+      <!-- Capacity Reservations -->
+      <div class="hcard c-gray">
+        <div class="hcard-top">
+          <span class="hcard-badge">📦 Capacity Reservations</span>
+          <span class="discount-pill dp-none">할인 없음</span>
+        </div>
+        <h3>온디맨드 용량 예약</h3>
+        <p class="analogy">"방을 예약해두되, 실제로 안 자더라도 방값은 내야 함 — 언제든 쓸 수 있게 방을 붙잡아두는 것."</p>
+        <ul>
+          <li><span class="dot">›</span>특정 AZ의 On-Demand 용량 보장</li>
+          <li><span class="dot">›</span>약정 없음, 언제든 생성·취소 가능</li>
+          <li><span class="dot">›</span>사용 여부와 무관하게 On-Demand 요금 발생</li>
+          <li><span class="dot">›</span>Savings Plans / RI와 결합해 비용 절감 가능</li>
+        </ul>
+      </div>
+
+    </div><!-- /hotel-grid -->
+
+    <!-- COMPARISON TABLE -->
+    <div class="sec-eyebrow" style="margin-bottom:12px;">구매 옵션 비교표</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>옵션</th>
+            <th>할인율</th>
+            <th>약정기간</th>
+            <th>인스턴스 중단 위험</th>
+            <th>결제 방식</th>
+            <th>주요 사용 사례</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="td-name"><span class="tag tag-blue">On-Demand</span></div>
+              <span class="td-sub">온디맨드</span>
+            </td>
+            <td><span class="tag tag-gray">기준 요금</span></td>
+            <td style="color:#8b949e;font-size:12px;">없음</td>
+            <td><span class="tag tag-green">없음</span></td>
+            <td style="color:#8b949e;font-size:12px;">사용한 만큼</td>
+            <td style="color:#8b949e;font-size:12px;">단기, 불규칙, 테스트</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="td-name"><span class="tag tag-green">Standard RI</span></div>
+              <span class="td-sub">표준 예약</span>
+            </td>
+            <td><span class="tag tag-green">최대 72%</span></td>
+            <td style="font-size:12px;color:#e6edf3;font-weight:600;">1년 or 3년</td>
+            <td><span class="tag tag-green">없음</span></td>
+            <td style="color:#8b949e;font-size:12px;">No / Partial / All Upfront</td>
+            <td style="color:#8b949e;font-size:12px;">DB, 안정적 장기 서버</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="td-name"><span class="tag tag-green">Convertible RI</span></div>
+              <span class="td-sub">전환형 예약</span>
+            </td>
+            <td><span class="tag tag-green">최대 66%</span></td>
+            <td style="font-size:12px;color:#e6edf3;font-weight:600;">1년 or 3년</td>
+            <td><span class="tag tag-green">없음</span></td>
+            <td style="color:#8b949e;font-size:12px;">No / Partial / All Upfront</td>
+            <td style="color:#8b949e;font-size:12px;">인스턴스 변경이 필요한 장기 워크로드</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="td-name"><span class="tag tag-purple">Savings Plans</span></div>
+              <span class="td-sub">세이빙스 플랜</span>
+            </td>
+            <td><span class="tag tag-purple">최대 66~72%</span></td>
+            <td style="font-size:12px;color:#e6edf3;font-weight:600;">1년 or 3년</td>
+            <td><span class="tag tag-green">없음</span></td>
+            <td style="color:#8b949e;font-size:12px;">시간당 금액 약정</td>
+            <td style="color:#8b949e;font-size:12px;">다양한 인스턴스 유연 사용</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="td-name"><span class="tag tag-aws">Spot</span></div>
+              <span class="td-sub">스팟</span>
+            </td>
+            <td><span class="tag tag-aws" style="font-size:11px;font-weight:800;">최대 90% 🔥</span></td>
+            <td style="color:#8b949e;font-size:12px;">없음</td>
+            <td><span class="tag tag-red">있음 ⚠️</span></td>
+            <td style="color:#8b949e;font-size:12px;">사용한 만큼 (경매가)</td>
+            <td style="color:#8b949e;font-size:12px;">배치, ML 학습, 비중요 작업</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="td-name"><span class="tag tag-red">Dedicated Hosts</span></div>
+              <span class="td-sub">전용 호스트</span>
+            </td>
+            <td><span class="tag tag-blue">RI 적용 시 최대 70%</span></td>
+            <td style="color:#8b949e;font-size:12px;">없음 / 1·3년 선택</td>
+            <td><span class="tag tag-green">없음</span></td>
+            <td style="color:#8b949e;font-size:12px;">On-Demand or RI</td>
+            <td style="color:#8b949e;font-size:12px;">BYOL, 규정 준수, 소켓/코어 가시성</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="td-name"><span class="tag tag-gray">Dedicated Instance</span></div>
+              <span class="td-sub">전용 인스턴스</span>
+            </td>
+            <td><span class="tag tag-gray">약간 높은 요금</span></td>
+            <td style="color:#8b949e;font-size:12px;">없음</td>
+            <td><span class="tag tag-green">없음</span></td>
+            <td style="color:#8b949e;font-size:12px;">사용한 만큼</td>
+            <td style="color:#8b949e;font-size:12px;">하드웨어 물리적 격리 (소켓 가시성 없음)</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="td-name"><span class="tag tag-gray">Capacity Reservations</span></div>
+              <span class="td-sub">용량 예약</span>
+            </td>
+            <td><span class="tag tag-gray">없음</span></td>
+            <td style="color:#8b949e;font-size:12px;">없음 (언제든 취소)</td>
+            <td><span class="tag tag-green">없음</span></td>
+            <td style="color:#8b949e;font-size:12px;">On-Demand 요금 (미사용도 과금)</td>
+            <td style="color:#8b949e;font-size:12px;">특정 AZ 용량 확보 필요 시</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CALLOUT: RI sub-types -->
+    <div class="callout" style="margin-top:14px;">
+      <span class="icon">💡</span>
+      <div class="text">
+        <strong>Standard RI vs Convertible RI 핵심 차이:</strong>
+        Standard는 할인율이 더 크지만(72%) 인스턴스 패밀리를 바꿀 수 없고, Marketplace에서 타인에게 판매할 수 있습니다.
+        Convertible는 인스턴스 패밀리·OS·테넌시를 변경할 수 있지만 Marketplace 판매가 불가합니다.
+        시험에서 <strong>"가장 큰 할인 + 변경 불가"</strong>가 나오면 Standard RI, <strong>"변경 유연성"</strong>이 나오면 Convertible RI를 선택하세요.
+      </div>
+    </div>
+
+    <!-- CALLOUT: Spot Warning -->
+    <div class="callout" style="margin-top:10px; background:rgba(248,81,73,0.07); border-color:rgba(248,81,73,0.22);">
+      <span class="icon">⚠️</span>
+      <div class="text" style="color:#ffa198;">
+        <strong style="color:#f85149;">Spot 인스턴스 중단 시나리오:</strong>
+        AWS가 스팟 인스턴스를 회수할 경우 <strong style="color:#f85149;">2분 전 경고</strong>를 줍니다. 이 2분 안에 체크포인트 저장 등의 종료 처리를 해야 합니다.
+        DB, 결제 시스템처럼 중단되면 안 되는 서비스에는 절대 사용하지 마세요.
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 2: SECURITY GROUPS ─── -->
+  <section id="sg">
+    <div class="sec-eyebrow">Section 02</div>
+    <div class="sec-title">보안 그룹 (Security Groups)</div>
+    <div class="sec-desc">EC2 인스턴스의 가상 방화벽 — 인바운드/아웃바운드 트래픽을 제어합니다.</div>
+
+    <!-- VISUAL DIAGRAM -->
+    <div class="sg-visual">
+      <div class="sg-region">
+        <div class="sg-region-label">🌐 인터넷 (Internet)</div>
+        <div class="sg-arrow">
+          <div class="sg-arr-item arr-in">
+            <span class="arr">↓</span>
+            <span class="arr-lbl">Inbound</span>
+          </div>
+          <div class="sg-arr-item arr-out">
+            <span class="arr">↑</span>
+            <span class="arr-lbl">Outbound</span>
+          </div>
+        </div>
+        <div class="sg-box">
+          <div class="sg-box-label">🛡️ Security Group (가상 방화벽)</div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+            <div class="sg-ec2-block">
+              <div class="sg-ec2-label">EC2</div>
+              <div class="sg-ec2-sub">Instance A</div>
+            </div>
+            <div class="sg-ec2-block">
+              <div class="sg-ec2-label">EC2</div>
+              <div class="sg-ec2-sub">Instance B</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#6e7681;margin-top:8px;">하나의 보안 그룹 → 여러 인스턴스에 적용 가능</div>
+      </div>
+    </div>
+
+    <!-- FACTS GRID -->
+    <div class="sg-facts-grid">
+      <div class="sg-fact-card inbound">
+        <h4>🔵 Inbound (인바운드) 규칙</h4>
+        <div class="fact-row">
+          <div class="fact-dot red"></div>
+          <p><strong>기본값: 모든 인바운드 차단</strong><br>명시적으로 허용 규칙을 추가해야 접근 가능</p>
+        </div>
+        <div class="fact-row">
+          <div class="fact-dot blue"></div>
+          <p>허용 규칙만 설정 가능 (Deny 규칙 없음)</p>
+        </div>
+        <div class="fact-row">
+          <div class="fact-dot blue"></div>
+          <p>예: SSH 22번 포트를 내 IP에서만 허용</p>
+        </div>
+      </div>
+
+      <div class="sg-fact-card outbound">
+        <h4>🟢 Outbound (아웃바운드) 규칙</h4>
+        <div class="fact-row">
+          <div class="fact-dot green"></div>
+          <p><strong>기본값: 모든 아웃바운드 허용</strong><br>인터넷으로 나가는 트래픽은 기본 열림</p>
+        </div>
+        <div class="fact-row">
+          <div class="fact-dot green"></div>
+          <p>Stateful: 인바운드를 허용하면 응답 트래픽은 자동 허용</p>
+        </div>
+        <div class="fact-row">
+          <div class="fact-dot orange"></div>
+          <p>NACL(Network ACL)과 달리 응답 규칙을 별도로 안 써도 됨</p>
+        </div>
+      </div>
+
+      <div class="sg-fact-card neutral" style="border-color:#30363d;">
+        <h4 style="color:#bc8cff;">📌 보안 그룹 핵심 특성</h4>
+        <div class="fact-row">
+          <div class="fact-dot purple"></div>
+          <p><strong>하나의 SG → 여러 EC2에 적용 가능</strong><br>반대로, 하나의 EC2에 여러 SG를 붙일 수 있음</p>
+        </div>
+        <div class="fact-row">
+          <div class="fact-dot purple"></div>
+          <p>특정 리전 / VPC에 종속 (다른 리전에서 재사용 불가)</p>
+        </div>
+        <div class="fact-row">
+          <div class="fact-dot purple"></div>
+          <p>다른 보안 그룹을 Source로 참조 가능 (IP 대신 SG 지정)</p>
+        </div>
+      </div>
+
+      <div class="sg-fact-card neutral" style="border-color:#30363d;">
+        <h4 style="color:#f0883e;">⚡ 타임아웃 vs 연결 거부</h4>
+        <div class="fact-row">
+          <div class="fact-dot orange"></div>
+          <p><strong>타임아웃 발생 시 → 보안 그룹 문제</strong><br>포트가 막혀 있거나 허용 규칙이 없는 것</p>
+        </div>
+        <div class="fact-row">
+          <div class="fact-dot red"></div>
+          <p><strong>Connection Refused → 앱 문제</strong><br>보안 그룹은 통과했지만 앱이 응답 안 함</p>
+        </div>
+        <div class="fact-row">
+          <div class="fact-dot blue"></div>
+          <p>EC2와는 달리 보안 그룹은 EC2 외부에서 동작 (EC2가 뭘 받는지 모름)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-blue" style="margin-top:4px;">
+      <span class="icon">🧠</span>
+      <div class="text">
+        <strong>Stateful 기억법:</strong> 보안 그룹은 <strong>"대화를 기억"</strong>합니다.
+        내가 먼저 HTTP 요청을 허용했다면, 그 응답은 자동으로 통과시킵니다.
+        반면 NACL은 Stateless — 요청과 응답을 각각 별도로 허용해야 합니다. (DVA-C02에서 NACL vs SG 비교 문제 자주 출제!)
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 3: INSTANCE TYPES ─── -->
+  <section id="instances">
+    <div class="sec-eyebrow">Section 03</div>
+    <div class="sec-title">EC2 인스턴스 유형 (Instance Types)</div>
+    <div class="sec-desc">시험에서 "어떤 인스턴스 유형?" 문제는 키워드로 판단합니다 — 각 유형의 핵심 키워드를 외워두세요.</div>
+
+    <div class="inst-grid">
+
+      <div class="inst-card general">
+        <div class="inst-type-label">General Purpose</div>
+        <h4>범용 인스턴스</h4>
+        <div class="inst-family">M5, M6g, T2, T3, T4g</div>
+        <p class="inst-uses">CPU, 메모리, 네트워크 균형 잡힌 리소스. 웹 서버, 코드 리포지토리, 소규모 DB 등 다양한 워크로드에 적합.</p>
+        <div class="inst-exam-tip">⚡ 시험 키워드: <strong>"균형 / 다목적 / 웹 서버"</strong></div>
+      </div>
+
+      <div class="inst-card compute">
+        <div class="inst-type-label">Compute Optimized</div>
+        <h4>컴퓨팅 최적화</h4>
+        <div class="inst-family">C5, C5n, C6g, C6gn</div>
+        <p class="inst-uses">고성능 프로세서를 사용하는 컴퓨팅 집약적 워크로드에 적합. 고성능 컴퓨팅(HPC), 과학 시뮬레이션, ML 추론, 게임 서버, 미디어 트랜스코딩.</p>
+        <div class="inst-exam-tip">⚡ 시험 키워드: <strong>"HPC / 고성능 컴퓨팅 / C로 시작"</strong></div>
+      </div>
+
+      <div class="inst-card memory">
+        <div class="inst-type-label">Memory Optimized</div>
+        <h4>메모리 최적화</h4>
+        <div class="inst-family">R6g, R5, X1, X2, z1d</div>
+        <p class="inst-uses">메모리에서 대용량 데이터를 처리하는 워크로드. 인메모리 DB(Redis, Memcached), 실시간 빅데이터, SAP HANA, 고성능 데이터 분석.</p>
+        <div class="inst-exam-tip">⚡ 시험 키워드: <strong>"인메모리 / RAM 집약적 / 실시간 처리"</strong></div>
+      </div>
+
+      <div class="inst-card storage">
+        <div class="inst-type-label">Storage Optimized</div>
+        <h4>스토리지 최적화</h4>
+        <div class="inst-family">I3, I4i, D2, D3, H1</div>
+        <p class="inst-uses">로컬 스토리지에 매우 빠르고 빈번하게 읽기/쓰기하는 워크로드. 고빈도 OLTP 데이터베이스, 분산 파일시스템, 데이터 웨어하우징, NoSQL DB.</p>
+        <div class="inst-exam-tip">⚡ 시험 키워드: <strong>"OLTP / 고빈도 I/O / 초당 수천 건"</strong></div>
+      </div>
+
+      <div class="inst-card accelerated">
+        <div class="inst-type-label">Accelerated Computing</div>
+        <h4>가속 컴퓨팅</h4>
+        <div class="inst-family">P3, P4, G4, G5, F1</div>
+        <p class="inst-uses">하드웨어 가속기(GPU, FPGA)를 사용하는 워크로드. ML 학습, 그래픽 처리, 게임 스트리밍, 비디오 렌더링, FPGA 기반 연산.</p>
+        <div class="inst-exam-tip">⚡ 시험 키워드: <strong>"GPU / ML 학습 / 그래픽 / FPGA"</strong></div>
+      </div>
+
+    </div>
+
+    <!-- Instance type quick ref table -->
+    <div style="margin-top:16px;">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>유형</th>
+              <th>패밀리</th>
+              <th>핵심 리소스</th>
+              <th>시험 키워드</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-blue">General Purpose</span></td>
+              <td style="font-family:monospace;font-size:12px;color:#8b949e;">M, T</td>
+              <td style="font-size:12px;color:#8b949e;">균형형 (CPU+RAM+Network)</td>
+              <td style="font-size:12px;color:#8b949e;">웹 서버, 다목적, 균형</td>
+            </tr>
+            <tr>
+              <td><span class="tag" style="background:rgba(240,136,62,0.12);color:#f0883e;">Compute Optimized</span></td>
+              <td style="font-family:monospace;font-size:12px;color:#8b949e;">C</td>
+              <td style="font-size:12px;color:#8b949e;">고성능 CPU</td>
+              <td style="font-size:12px;color:#e6edf3;font-weight:600;">HPC, 고성능 컴퓨팅, 게임 서버</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-purple">Memory Optimized</span></td>
+              <td style="font-family:monospace;font-size:12px;color:#8b949e;">R, X, z</td>
+              <td style="font-size:12px;color:#8b949e;">고용량 RAM</td>
+              <td style="font-size:12px;color:#e6edf3;font-weight:600;">인메모리 DB, 실시간 빅데이터</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-green">Storage Optimized</span></td>
+              <td style="font-family:monospace;font-size:12px;color:#8b949e;">I, D, H</td>
+              <td style="font-size:12px;color:#8b949e;">고성능 NVMe/SSD</td>
+              <td style="font-size:12px;color:#e6edf3;font-weight:600;">OLTP, 고빈도 I/O, NoSQL</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-red">Accelerated Computing</span></td>
+              <td style="font-family:monospace;font-size:12px;color:#8b949e;">P, G, F</td>
+              <td style="font-size:12px;color:#8b949e;">GPU / FPGA</td>
+              <td style="font-size:12px;color:#8b949e;">ML 학습, 그래픽, FPGA</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 4: Q&A ─── -->
+  <section id="qa">
+    <div class="sec-eyebrow">Section 04</div>
+    <div class="sec-title">시험 예상 문제 Q&amp;A</div>
+    <div class="sec-desc">클릭해서 정답과 해설을 확인하세요. 실제 시험 문제 패턴과 동일합니다.</div>
+
+    <div class="qa-list">
+
+      <!-- Q1 -->
+      <details>
+        <summary>
+          <div class="q-num">1</div>
+          <div class="q-text">가장 큰 할인을 제공하지만 <strong>중요한 작업이나 데이터베이스에는 적합하지 않은</strong> EC2 구매 옵션은?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">⚡ <span class="hl">Spot Instance (스팟 인스턴스)</span></div>
+          <div class="a-exp">
+            스팟 인스턴스는 <strong>최대 90% 할인</strong>으로 EC2 구매 옵션 중 가장 저렴합니다.
+            그러나 AWS가 해당 용량을 필요로 하면 <strong>2분 경고 후 인스턴스를 강제 종료</strong>시킵니다.
+            따라서 중단되어도 괜찮은 배치 작업, ML 학습, 데이터 분석에는 적합하지만
+            DB, 결제 시스템, 프로덕션 서버에는 절대 사용하면 안 됩니다.
+          </div>
+          <div class="a-tip">
+            <strong>🎯 시험 팁</strong>
+            "가장 큰 할인" + "중단 가능성" = Spot Instance. 이 두 키워드가 함께 나오면 즉시 Spot을 선택하세요.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q2 -->
+      <details>
+        <summary>
+          <div class="q-num">2</div>
+          <div class="q-text">EC2 인스턴스 <strong>안팎의 트래픽을 제어</strong>하려면 무엇을 사용해야 할까요?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">🛡️ <span class="hl">Security Group (보안 그룹)</span></div>
+          <div class="a-exp">
+            보안 그룹은 EC2 인스턴스에 대한 <strong>가상 방화벽</strong>입니다.
+            <strong>인바운드 규칙</strong>(외부 → EC2)과 <strong>아웃바운드 규칙</strong>(EC2 → 외부)을 설정해
+            허용할 트래픽을 세밀하게 제어합니다.
+            기본적으로 모든 인바운드는 차단, 모든 아웃바운드는 허용됩니다.
+          </div>
+          <div class="a-note">
+            <strong>💡 참고</strong>
+            VPC 레벨의 트래픽 제어는 NACL(Network ACL)이 담당합니다. 보안 그룹은 Stateful, NACL은 Stateless입니다.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q3 -->
+      <details>
+        <summary>
+          <div class="q-num">3</div>
+          <div class="q-text">EC2 <strong>예약 인스턴스(Reserved Instance)를 얼마나 길게</strong> 예약할 수 있습니까?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">📅 최대 <span class="hl">3년</span> (1년 또는 3년 선택)</div>
+          <div class="a-exp">
+            EC2 예약 인스턴스는 <strong>1년 또는 3년</strong> 중에서 선택합니다.
+            약정 기간이 길수록 할인율이 높아집니다.
+            3년 약정 + All Upfront 결제 시 <strong>최대 72% 할인</strong>을 받을 수 있습니다.
+          </div>
+          <div class="a-tip">
+            <strong>🎯 시험 팁</strong>
+            선택지에 "6개월"이 보이면 함정입니다. RI는 1년 또는 3년만 존재합니다.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q4 -->
+      <details>
+        <summary>
+          <div class="q-num">4</div>
+          <div class="q-text">EC2에 <strong>고성능 컴퓨팅(HPC) 애플리케이션</strong>을 배포하려고 합니다. 어떤 인스턴스 유형을 선택해야 할까요?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">🖥️ <span class="hl">Compute Optimized</span> (컴퓨팅 최적화 — C 패밀리)</div>
+          <div class="a-exp">
+            컴퓨팅 최적화 인스턴스(C5, C6g 등)는 <strong>고성능 프로세서</strong>를 사용해
+            CPU 집약적인 작업에 최적화되어 있습니다.
+            HPC, 과학 시뮬레이션, 게임 서버, ML 추론, 미디어 트랜스코딩이 대표적인 사용 사례입니다.
+          </div>
+          <div class="a-tip">
+            <strong>🎯 시험 팁</strong>
+            "HPC" = Compute Optimized (C 패밀리). 절대 General Purpose와 헷갈리지 마세요.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q5 -->
+      <details>
+        <summary>
+          <div class="q-num">5</div>
+          <div class="q-text"><strong>1년 동안 서버에서 지속해서 실행</strong>할 계획인 애플리케이션에 적합한 EC2 구매 옵션은 무엇일까요?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">📅 <span class="hl">Reserved Instance (예약 인스턴스)</span></div>
+          <div class="a-exp">
+            1년 이상 지속적으로 실행되는 예측 가능한 워크로드라면
+            <strong>예약 인스턴스(RI)</strong>가 가장 비용 효율적입니다.
+            On-Demand 대비 최대 72% 할인을 받을 수 있으며,
+            안정적인 DB 서버나 상시 운영 서버에 이상적입니다.
+          </div>
+          <div class="a-tip">
+            <strong>🎯 시험 팁</strong>
+            "1년 이상 지속" + "예측 가능한 워크로드" = Reserved Instance. Spot은 중단 위험 때문에 오답입니다.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q6 -->
+      <details>
+        <summary>
+          <div class="q-num">6</div>
+          <div class="q-text">EC2 인스턴스를 시작할 때 <strong>소프트웨어 설치와 OS 패키지 업데이트</strong>를 자동으로 수행하는 가장 좋은 방법은?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">⚙️ <span class="hl">EC2 User Data (유저 데이터 스크립트)</span></div>
+          <div class="a-exp">
+            <strong>User Data</strong>는 EC2 인스턴스가 <strong>최초 시작될 때 단 한 번 자동 실행</strong>되는 부트스트랩 스크립트입니다.
+            Root 권한으로 실행되며, 패키지 설치·서비스 시작·파일 다운로드 등 모든 초기화 작업을 자동화할 수 있습니다.
+          </div>
+          <div class="code-box">
+<span class="code-cm">#!/bin/bash</span>
+<span class="code-cm"># 인스턴스 최초 시작 시 자동 실행 (Bootstrap Script)</span>
+<span class="code-cmd">yum update</span> -y
+<span class="code-cmd">yum install</span> -y httpd
+<span class="code-cmd">systemctl start</span> httpd
+<span class="code-cmd">systemctl enable</span> httpd
+<span class="code-cmd">echo</span> <span class="code-str">"Hello from EC2"</span> > /var/www/html/index.html
+          </div>
+          <div class="a-tip" style="margin-top:10px;">
+            <strong>🎯 시험 팁</strong>
+            "인스턴스 시작 시 자동 설치/설정" 키워드가 나오면 무조건 User Data. AMI와 헷갈리지 마세요 — AMI는 이미지 자체를 커스텀하는 것이고, User Data는 런타임 초기화입니다.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q7 -->
+      <details>
+        <summary>
+          <div class="q-num">7</div>
+          <div class="q-text"><strong>인메모리 데이터베이스(In-Memory DB)</strong>를 사용하는 중요 애플리케이션을 위해서는 어떤 EC2 인스턴스 유형을 선택해야 할까요?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">🧠 <span class="hl">Memory Optimized</span> (메모리 최적화 — R/X 패밀리)</div>
+          <div class="a-exp">
+            인메모리 DB(Redis, Memcached, SAP HANA)는 데이터를 RAM에 올려두고 처리하기 때문에
+            <strong>대용량 고속 메모리</strong>가 필수입니다.
+            R 패밀리(R5, R6g)나 X 패밀리(X1, X2)는 다른 인스턴스 유형 대비 훨씬 많은 메모리를 제공합니다.
+          </div>
+          <div class="a-tip">
+            <strong>🎯 시험 팁</strong>
+            "인메모리" = Memory Optimized (R 패밀리). R은 RAM의 R이라고 기억하세요!
+          </div>
+        </div>
+      </details>
+
+      <!-- Q8 -->
+      <details>
+        <summary>
+          <div class="q-num">8</div>
+          <div class="q-text">데이터베이스에 <strong>초당 수천 개의 요청을 처리하는 고빈도 OLTP 데이터베이스</strong>를 EC2로 마이그레이션하려고 합니다. 어떤 인스턴스 유형을 선택해야 할까요?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">💾 <span class="hl">Storage Optimized</span> (스토리지 최적화 — I/D 패밀리)</div>
+          <div class="a-exp">
+            OLTP(Online Transaction Processing)는 매 초 수천~수만 건의 읽기/쓰기가 발생하는 워크로드입니다.
+            <strong>Storage Optimized 인스턴스(I3, I4i)</strong>는 고성능 NVMe SSD를 탑재해
+            낮은 지연시간과 높은 IOPS(초당 I/O 작업 수)를 제공합니다.
+          </div>
+          <div class="a-tip">
+            <strong>🎯 시험 팁</strong>
+            "OLTP" + "고빈도 I/O" + "초당 수천 건" = Storage Optimized (I 패밀리). Memory와 헷갈리지 마세요 — 메모리가 아닌 디스크 속도가 핵심입니다.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q9 -->
+      <details>
+        <summary>
+          <div class="q-num">9</div>
+          <div class="q-text">"<strong>보안 그룹은 하나의 EC2 인스턴스에만 연결</strong>할 수 있다." — 이 문장은 참인가요, 거짓인가요?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val"><span class="hl-red">❌ 거짓 (False)</span></div>
+          <div class="a-exp">
+            보안 그룹은 <strong>여러 EC2 인스턴스에 동시에 연결</strong>할 수 있습니다.
+            반대로, 하나의 EC2 인스턴스에 <strong>여러 보안 그룹을 부착</strong>하는 것도 가능합니다.
+            예를 들어 "Web-SG"를 웹 서버 3대 모두에 적용하고,
+            특정 서버에만 "Admin-SG"를 추가로 붙일 수 있습니다.
+          </div>
+          <div class="a-note">
+            <strong>💡 정리</strong>
+            보안 그룹 ↔ EC2 관계는 <strong>다대다(N:M)</strong>입니다.
+            1개의 SG → 여러 EC2 가능 / 1개의 EC2 → 여러 SG 가능.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q10 -->
+      <details>
+        <summary>
+          <div class="q-num">10</div>
+          <div class="q-text">온프레미스 앱을 AWS로 마이그레이션할 때 <strong>애플리케이션이 전용 서버에서 실행되어야 하는 규정 준수 요구 사항</strong>이 있고, <strong>자체 소프트웨어 라이선스(BYOL)</strong>를 사용해야 합니다. 어떤 EC2 구매 옵션이 적합할까요?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">🏢 <span class="hl">Dedicated Hosts (전용 호스트)</span></div>
+          <div class="a-exp">
+            <strong>Dedicated Hosts</strong>는 물리적 서버 전체를 단독으로 할당받습니다.
+            이를 통해 <strong>규정 준수(Compliance)</strong> 요구사항을 충족하고,
+            소켓·코어 단위로 라이선스가 책정되는 Oracle, SQL Server, Windows Server 등의
+            <strong>BYOL(Bring Your Own License)</strong> 소프트웨어를 사용할 수 있습니다.
+          </div>
+          <div class="a-tip">
+            <strong>🎯 시험 팁</strong>
+            "전용 서버 규정 준수" + "BYOL" = Dedicated Hosts. Dedicated Instance와 혼동 금지 — Instance는 소켓/코어 가시성이 없어 BYOL에 부적합합니다.
+          </div>
+        </div>
+      </details>
+
+      <!-- Q11 -->
+      <details>
+        <summary>
+          <div class="q-num">11</div>
+          <div class="q-text">공급업체 라이선스가 <strong>물리적 코어 및 기본 네트워크 소켓 가시성</strong>을 기반으로 비용을 청구합니다. 어떤 EC2 구매 옵션으로 이 가시성을 확보할 수 있을까요?</div>
+          <div class="q-arrow">▶</div>
+        </summary>
+        <div class="q-answer">
+          <div class="a-label">정답</div>
+          <div class="a-val">🔍 <span class="hl">Dedicated Hosts (전용 호스트)</span></div>
+          <div class="a-exp">
+            <strong>Dedicated Hosts</strong>는 물리적 서버의 <strong>소켓 수, 코어 수, 하드웨어 ID</strong>를 직접 확인할 수 있습니다.
+            일부 소프트웨어 라이선스(Oracle Database, Microsoft 등)는 물리적 코어나 소켓 수 기반으로 비용을 책정하기 때문에
+            이 정보가 반드시 필요합니다.
+            <br><br>
+            반면 <strong>Dedicated Instance</strong>는 물리적 하드웨어를 단독 사용하지만
+            소켓·코어 등의 하드웨어 세부 정보를 볼 수 없습니다.
+          </div>
+          <div class="a-note">
+            <strong>💡 Dedicated Hosts vs Dedicated Instance 핵심 차이</strong>
+            Dedicated Hosts: 물리적 서버 단독 사용 + 소켓/코어 가시성 O + BYOL 가능
+            Dedicated Instance: 하드웨어 격리 O + 소켓/코어 가시성 X + BYOL 불가
+          </div>
+          <div class="a-tip" style="margin-top:8px;">
+            <strong>🎯 시험 팁</strong>
+            "물리적 코어/소켓 가시성" 키워드가 보이면 → 무조건 Dedicated Hosts!
+          </div>
+        </div>
+      </details>
+
+    </div><!-- /qa-list -->
+
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 5: TIPS ─── -->
+  <section id="tips">
+    <div class="sec-eyebrow">Section 05</div>
+    <div class="sec-title">빠른 요약 & 시험 TIP</div>
+    <div class="sec-desc">시험 직전에 훑어볼 핵심 요약과, 헷갈리는 키워드-정답 연결고리 모음입니다.</div>
+
+    <!-- QUICK SUMMARY CARDS -->
+    <div class="sec-eyebrow" style="margin-bottom:12px;">⚡ 빠른 요약</div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-key">💰 가장 큰 할인 = Spot</div>
+        <div class="summary-val">최대 90% 할인이지만 AWS가 언제든 2분 경고 후 강제 종료 — DB/중요 서버 절대 금지</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">📅 RI 최대 약정기간 = 3년</div>
+        <div class="summary-val">1년 또는 3년만 선택 가능. 6개월은 존재하지 않음. 3년 All Upfront 시 최대 72% 할인</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">🏢 BYOL + 물리 코어 = Dedicated Hosts</div>
+        <div class="summary-val">소켓·코어 가시성이 있어 라이선스 비용 계산 가능. Dedicated Instance는 가시성 없음</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">🛡️ 보안 그룹 = N:M 관계</div>
+        <div class="summary-val">1개 SG → 여러 EC2 / 1개 EC2 → 여러 SG. "하나에만 연결" 선택지는 항상 오답</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">⚙️ 시작 시 자동 설치 = User Data</div>
+        <div class="summary-val">인스턴스 최초 부팅 시 1회 실행되는 Bootstrap 스크립트. Root 권한으로 동작</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">🔌 타임아웃 vs 연결 거부</div>
+        <div class="summary-val">타임아웃 → 보안 그룹 문제 / Connection Refused → 앱 문제 (SG는 통과된 것)</div>
+      </div>
+    </div>
+
+    <!-- TIP LIST -->
+    <div class="tip-box">
+      <div class="tip-header">🎯 시험 TIP — 키워드 → 정답 연결고리</div>
+      <ul class="tip-list">
+        <li>
+          <span class="tip-kw">가장 큰 할인 + 중단 가능성</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Spot Instance</span>
+        </li>
+        <li>
+          <span class="tip-kw">1년 이상 지속 실행 + 예측 가능한 워크로드</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Reserved Instance</span>
+        </li>
+        <li>
+          <span class="tip-kw">다양한 인스턴스 패밀리를 유연하게 전환</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Savings Plans (Compute)</span>
+        </li>
+        <li>
+          <span class="tip-kw">BYOL + 전용 서버 규정 준수 + 소켓/코어 가시성</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Dedicated Hosts</span>
+        </li>
+        <li>
+          <span class="tip-kw">HPC / 고성능 컴퓨팅 / 게임 서버</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Compute Optimized (C 패밀리)</span>
+        </li>
+        <li>
+          <span class="tip-kw">인메모리 DB / RAM 집약적</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Memory Optimized (R 패밀리)</span>
+        </li>
+        <li>
+          <span class="tip-kw">OLTP / 고빈도 I/O / 초당 수천 건 DB 요청</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Storage Optimized (I 패밀리)</span>
+        </li>
+        <li>
+          <span class="tip-kw">ML 학습 / GPU / FPGA</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Accelerated Computing (P·G·F 패밀리)</span>
+        </li>
+        <li>
+          <span class="tip-kw">인스턴스 시작 시 소프트웨어 자동 설치</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">EC2 User Data (Bootstrap Script)</span>
+        </li>
+        <li>
+          <span class="tip-kw">EC2 트래픽 제어 (인바운드/아웃바운드)</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">Security Group (보안 그룹)</span>
+        </li>
+        <li>
+          <span class="tip-kw">보안 그룹 Stateful vs NACL Stateless</span>
+          <span class="tip-arrow">→</span>
+          <span class="tip-ans">SG는 응답 자동 허용 / NACL은 요청·응답 각각 허용 필요</span>
+        </li>
+      </ul>
+    </div>
+
+  </section>
+
+</div><!-- /container -->
+
+<script>
+  // Smooth scroll for nav links
+  document.querySelectorAll('nav a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Highlight active section in nav
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.style.color = '');
+        const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (active) active.style.color = '#FF9900';
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => io.observe(s));
+</script>
+
+</body>
+</html>
