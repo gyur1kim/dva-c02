@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS DVA-C02 스터디 가이드 — 홈</title>
+<style>
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --card:      #1c2128;
+    --border:    #30363d;
+    --border-2:  #21262d;
+    --aws:       #FF9900;
+    --aws-dim:   rgba(255,153,0,0.12);
+    --blue:      #58a6ff;
+    --blue-dim:  rgba(88,166,255,0.10);
+    --green:     #3fb950;
+    --green-dim: rgba(63,185,80,0.10);
+    --red:       #f85149;
+    --red-dim:   rgba(248,81,73,0.10);
+    --purple:    #bc8cff;
+    --purple-dim:rgba(163,113,247,0.10);
+    --orange:    #f0883e;
+    --text:      #e6edf3;
+    --text-2:    #8b949e;
+    --text-3:    #6e7681;
+    --muted:     #484f58;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, .mono { font-family: 'Courier New', Courier, monospace; }
+
+  /* ── Sticky Nav ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(22,27,34,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .nav-brand {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .nav-brand .logo { color: var(--aws); }
+  .nav-links { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .nav-links a {
+    color: var(--text-2);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background .15s, color .15s;
+  }
+  .nav-links a:hover { background: var(--aws-dim); color: var(--aws); }
+
+  /* ── Layout ── */
+  main { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── Hero ── */
+  .hero { padding: 56px 0 36px; border-bottom: 1px solid var(--border-2); }
+  .hero .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .chip {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 100px;
+    background: var(--aws-dim);
+    color: var(--aws);
+    border: 1px solid rgba(255,153,0,0.25);
+  }
+  .chip.alt { background: var(--blue-dim); color: var(--blue); border-color: rgba(88,166,255,0.25); }
+  .hero h1 {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .hero h1 .accent { color: var(--aws); }
+  .hero p.lead { font-size: 15px; color: var(--text-2); max-width: 620px; }
+
+  /* ── Hero stats ── */
+  .stats { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 30px; }
+  .stat .num { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; }
+  .stat .num .u { font-size: 14px; color: var(--aws); font-weight: 700; }
+  .stat .lbl { font-size: 12px; color: var(--text-3); margin-top: 6px; }
+
+  /* ── Section heading ── */
+  .sec { padding-top: 44px; }
+  .sec-h {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-3);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sec-h::after { content: ''; flex: 1; height: 1px; background: var(--border-2); }
+
+  /* ── Card grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  /* ── Section card (clickable) ── */
+  a.card {
+    position: relative;
+    display: block;
+    text-decoration: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 20px 20px;
+    overflow: hidden;
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+  }
+  a.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--muted);
+  }
+  a.card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent, var(--aws));
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  }
+
+  .card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+    background: var(--surface);
+    color: var(--text-2);
+  }
+  .card-go {
+    margin-left: auto;
+    font-size: 16px;
+    color: var(--text-3);
+    transition: transform .15s, color .15s;
+  }
+  a.card:hover .card-go { transform: translateX(4px); color: var(--accent, var(--aws)); }
+
+  a.card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  a.card h3 .emoji { font-size: 20px; }
+  .card-en { font-size: 12px; color: var(--text-3); margin-bottom: 14px; }
+  a.card ul { list-style: none; }
+  a.card li {
+    font-size: 13px;
+    color: var(--text-2);
+    padding: 3px 0;
+    display: flex;
+    gap: 8px;
+  }
+  a.card li .dot { color: var(--accent, var(--aws)); font-weight: 700; }
+
+  /* ── Accent color variants ── */
+  .c-aws::before    { background: var(--aws); }
+  .c-aws    { --accent: var(--aws); }
+  .c-aws .badge     { background: var(--aws-dim); color: var(--aws); }
+
+  .c-blue::before   { background: var(--blue); }
+  .c-blue   { --accent: var(--blue); }
+  .c-blue .badge    { background: var(--blue-dim); color: var(--blue); }
+
+  .c-green::before  { background: var(--green); }
+  .c-green  { --accent: var(--green); }
+  .c-green .badge   { background: var(--green-dim); color: var(--green); }
+
+  .c-purple::before { background: var(--purple); }
+  .c-purple { --accent: var(--purple); }
+  .c-purple .badge  { background: var(--purple-dim); color: var(--purple); }
+
+  /* ── Coming soon ── */
+  .soon {
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 22px 20px;
+    opacity: 0.6;
+  }
+  .soon::before { display: none; }
+  .soon h3 { font-size: 16px; color: var(--text-2); margin-bottom: 4px; }
+  .soon p { font-size: 12.5px; color: var(--text-3); }
+
+  /* ── Tip box (시험 TIP) ── */
+  .tip-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .tip-header { font-size: 13px; font-weight: 700; color: var(--aws); margin-bottom: 12px; }
+  .tip-list { list-style: none; }
+  .tip-list li {
+    font-size: 13px;
+    color: var(--text-2);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-2);
+  }
+  .tip-list li:last-child { border-bottom: none; }
+  .tip-kw { font-weight: 700; color: var(--text); margin-right: 6px; }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border-2);
+    margin-top: 56px;
+    padding-top: 24px;
+    font-size: 12px;
+    color: var(--text-3);
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 27px; }
+    .nav-brand span.sub { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Sticky Nav ── -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand"><span class="logo">▲</span> AWS DVA-C02 <span class="sub" style="color:var(--text-3);font-weight:500;">스터디</span></div>
+    <div class="nav-links">
+      <a href="#sections">섹션</a>
+      <a href="#tips">시험 TIP</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ── Hero ── -->
+  <header class="hero">
+    <div class="chips">
+      <span class="chip">AWS Certified Developer</span>
+      <span class="chip alt">DVA-C02</span>
+    </div>
+    <h1>AWS <span class="accent">시험 대비</span> 스터디 가이드</h1>
+    <p class="lead">섹션별로 정리한 핵심 개념, 시험 예상 Q&amp;A, 빠른 요약을 한곳에서. 카드를 눌러 각 주제의 학습 가이드로 이동하세요.</p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="num">2<span class="u">개</span></div>
+        <div class="lbl">학습 섹션</div>
+      </div>
+      <div class="stat">
+        <div class="num">2<span class="u">개</span></div>
+        <div class="lbl">AWS 서비스</div>
+      </div>
+      <div class="stat">
+        <div class="num">∞</div>
+        <div class="lbl">반복 학습</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Sections ── -->
+  <section class="sec" id="sections">
+    <div class="sec-h">학습 섹션</div>
+    <div class="grid">
+
+      <!-- Section 04 — IAM -->
+      <a class="card c-aws" href="section04_iam-study-guide.html">
+        <div class="card-top">
+          <span class="badge">Section 04</span>
+          <span class="card-go">→</span>
+        </div>
+        <h3><span class="emoji">🔐</span> IAM</h3>
+        <div class="card-en">Identity &amp; Access Management</div>
+        <ul>
+          <li><span class="dot">›</span> Users · Groups · Roles · Policies</li>
+          <li><span class="dot">›</span> 공동 책임 모델 (Shared Responsibility)</li>
+          <li><span class="dot">›</span> 보안 도구 &amp; IAM 모범 사례</li>
+        </ul>
+      </a>
+
+      <!-- Section 05 — EC2 -->
+      <a class="card c-blue" href="section05_ec2-study-guide.html">
+        <div class="card-top">
+          <span class="badge">Section 05</span>
+          <span class="card-go">→</span>
+        </div>
+        <h3><span class="emoji">🖥️</span> EC2</h3>
+        <div class="card-en">Elastic Compute Cloud</div>
+        <ul>
+          <li><span class="dot">›</span> 인스턴스 타입 &amp; 구매 옵션</li>
+          <li><span class="dot">›</span> Security Group · EBS · AMI</li>
+          <li><span class="dot">›</span> 시험에 나오는 핵심만</li>
+        </ul>
+      </a>
+
+      <!-- Coming soon -->
+      <div class="soon">
+        <h3>＋ Section 06+</h3>
+        <p>다음 섹션 학습 가이드가 준비되는 대로 여기에 추가됩니다.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── 시험 TIP ── -->
+  <section class="sec" id="tips">
+    <div class="sec-h">시험 TIP 모음</div>
+    <div class="tip-box">
+      <div class="tip-header">🎯 키워드 → 정답</div>
+      <ul class="tip-list">
+        <li><span class="tip-kw">글로벌 서비스 · 리전 무관</span> → IAM</li>
+        <li><span class="tip-kw">그룹 안에 그룹 포함?</span> → 불가 (사용자만 포함)</li>
+        <li><span class="tip-kw">Version 위치</span> → 정책 문서 레벨 (Statement 아님)</li>
+        <li><span class="tip-kw">루트 계정 보안 1순위</span> → MFA 활성화</li>
+        <li><span class="tip-kw">EC2에 임시 권한 부여</span> → IAM Role (STS)</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    AWS Certified Developer – Associate (DVA-C02) 시험 대비 정리<br>
+    자기완결형 로컬 HTML · 인터넷 연결 없이 동작
+  </footer>
+
+</main>
+
+<script>
+  // smooth scroll for nav anchors
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  });
+</script>
+
+</body>
+</html>
