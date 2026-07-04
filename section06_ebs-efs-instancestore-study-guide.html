@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EBS · AMI · Instance Store · EFS — DVA-C02 스터디 가이드</title>
+<style>
+  :root{
+    --bg:#0d1117; --surface:#161b22; --card:#1c2128;
+    --border:#30363d; --border-2:#21262d;
+    --aws:#FF9900; --aws-dim:rgba(255,153,0,0.12);
+    --blue:#58a6ff; --blue-dim:rgba(88,166,255,0.10);
+    --green:#3fb950; --green-dim:rgba(63,185,80,0.10);
+    --red:#f85149; --red-dim:rgba(248,81,73,0.10);
+    --purple:#bc8cff; --purple-dim:rgba(163,113,247,0.10);
+    --orange:#f0883e;
+    --text:#e6edf3; --text-2:#8b949e; --text-3:#6e7681; --muted:#484f58;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,'Segoe UI',sans-serif;
+    font-size:14px; line-height:1.6; padding-bottom:80px;
+  }
+  code,.mono{font-family:'Courier New',Courier,monospace}
+
+  /* NAV */
+  nav{
+    position:sticky; top:0; z-index:100;
+    background:rgba(22,27,34,0.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:18px;
+    padding:12px 20px; overflow-x:auto; white-space:nowrap;
+  }
+  nav .brand{font-weight:800;color:var(--aws);font-size:15px;flex-shrink:0}
+  nav a{color:var(--text-2);text-decoration:none;font-size:13px;flex-shrink:0}
+  nav a:hover{color:var(--text)}
+
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px}
+
+  /* HERO */
+  .hero{padding:44px 0 30px;border-bottom:1px solid var(--border-2)}
+  .hero .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{
+    font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;
+    background:var(--aws-dim);color:var(--aws);border:1px solid rgba(255,153,0,0.25);
+  }
+  .chip.alt{background:var(--blue-dim);color:var(--blue);border-color:rgba(88,166,255,0.25)}
+  .hero h1{font-size:30px;font-weight:800;line-height:1.25;margin-bottom:10px}
+  .hero p{color:var(--text-2);font-size:15px;max-width:640px}
+  .hero-stats{display:flex;gap:26px;margin-top:24px;flex-wrap:wrap}
+  .stat .n{font-size:24px;font-weight:800;color:var(--aws)}
+  .stat .l{font-size:12px;color:var(--text-3);margin-top:2px}
+
+  section{padding:38px 0;border-bottom:1px solid var(--border-2)}
+  .sec-label{font-size:12px;font-weight:700;color:var(--aws);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+  h2{font-size:22px;font-weight:800;margin-bottom:6px}
+  .sec-desc{color:var(--text-2);margin-bottom:22px;font-size:14px}
+  h3.sub{font-size:16px;font-weight:700;margin:24px 0 12px}
+
+  /* CARD GRID */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+  .card{
+    position:relative;background:var(--card);border:1px solid var(--border);
+    border-radius:12px;padding:18px 18px 16px;overflow:hidden;
+  }
+  .card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px}
+  .card.c-blue::before{background:var(--blue)}
+  .card.c-green::before{background:var(--green)}
+  .card.c-purple::before{background:var(--purple)}
+  .card.c-aws::before{background:var(--aws)}
+  .card.c-red::before{background:var(--red)}
+  .card.c-gray::before{background:var(--muted)}
+  .card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px}
+  .c-blue .badge{background:var(--blue-dim);color:var(--blue)}
+  .c-green .badge{background:var(--green-dim);color:var(--green)}
+  .c-purple .badge{background:var(--purple-dim);color:var(--purple)}
+  .c-aws .badge{background:var(--aws-dim);color:var(--aws)}
+  .c-red .badge{background:var(--red-dim);color:var(--red)}
+  .c-gray .badge{background:rgba(139,148,158,0.12);color:var(--text-2)}
+  .card h3{font-size:16px;font-weight:700;margin-bottom:8px}
+  .card .analogy{font-size:13px;color:var(--text-3);font-style:italic;margin-bottom:10px;line-height:1.5}
+  .card ul{list-style:none}
+  .card li{font-size:13px;color:var(--text-2);padding:3px 0;display:flex;gap:7px;align-items:flex-start}
+  .card .dot{color:var(--aws);font-weight:700;flex-shrink:0}
+
+  /* TABLE */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin:8px 0}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border-2);vertical-align:top}
+  thead th{background:var(--surface);color:var(--text);font-weight:700;font-size:12.5px;position:sticky;left:auto}
+  tbody tr:hover{background:rgba(255,255,255,0.02)}
+  td .yes{color:var(--green);font-weight:700}
+  td .no{color:var(--red);font-weight:700}
+  td.key{font-weight:700;color:var(--text);background:rgba(255,255,255,0.015)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--aws-dim);color:var(--aws)}
+
+  /* CALLOUT */
+  .callout{display:flex;gap:12px;background:var(--aws-dim);border:1px solid rgba(255,153,0,0.25);border-left:3px solid var(--aws);border-radius:8px;padding:14px 16px;margin:16px 0}
+  .callout .icon{font-size:18px;flex-shrink:0}
+  .callout .text{font-size:13.5px;color:var(--text);line-height:1.6}
+  .callout-blue{background:var(--blue-dim);border-color:rgba(88,166,255,0.25);border-left-color:var(--blue)}
+  .callout-red{background:var(--red-dim);border-color:rgba(248,81,73,0.25);border-left-color:var(--red)}
+
+  /* Q&A */
+  details{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+  details[open]{border-color:rgba(255,153,0,0.4)}
+  summary{display:flex;align-items:center;gap:14px;padding:16px 18px;cursor:pointer;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  .q-num{width:26px;height:26px;border-radius:7px;background:rgba(139,148,158,0.14);color:var(--text-2);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  details[open] .q-num{background:var(--aws);color:#0d1117}
+  .q-text{flex:1;font-size:13.5px;color:var(--text);font-weight:500;line-height:1.5}
+  .q-arrow{color:var(--text-3);font-size:11px;transition:transform .2s;flex-shrink:0}
+  details[open] .q-arrow{transform:rotate(90deg);color:var(--aws)}
+  .q-answer{padding:0 18px 18px 58px}
+  .a-label{font-size:11px;font-weight:700;color:var(--green);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+  .a-val{font-size:15px;font-weight:700;margin-bottom:12px}
+  .a-val .hl{color:var(--aws)}
+  .a-exp{font-size:13.5px;color:var(--text-2);line-height:1.65;margin-bottom:12px}
+  .a-exp b{color:var(--text)}
+  .a-tip{background:var(--blue-dim);border-left:3px solid var(--blue);border-radius:6px;padding:10px 13px;font-size:13px;color:var(--text-2);line-height:1.6}
+  .a-tip strong{color:var(--blue)}
+  .false-tag{display:inline-block;background:var(--red-dim);color:var(--red);font-weight:800;font-size:12px;padding:3px 10px;border-radius:6px;margin-right:8px}
+
+  /* SUMMARY */
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-bottom:24px}
+  .summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 15px;position:relative;overflow:hidden}
+  .summary-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--aws)}
+  .summary-key{font-size:13px;font-weight:700;color:var(--aws);margin-bottom:6px}
+  .summary-val{font-size:12px;color:var(--text-2);line-height:1.5}
+
+  .tip-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px}
+  .tip-header{font-size:13px;font-weight:700;color:var(--aws);margin-bottom:12px}
+  .tip-list{list-style:none}
+  .tip-list li{font-size:13px;color:var(--text-2);padding:7px 0;border-bottom:1px solid var(--border-2);line-height:1.5}
+  .tip-list li:last-child{border-bottom:none}
+  .tip-kw{font-weight:700;color:var(--text);margin-right:6px}
+  .arrow{color:var(--aws);font-weight:700}
+
+  .foot{text-align:center;color:var(--text-3);font-size:12px;padding:30px 0 0}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">☁ DVA-C02</span>
+  <a href="#storage">스토리지란</a>
+  <a href="#ebs">EBS</a>
+  <a href="#voltypes">볼륨 유형</a>
+  <a href="#ami">AMI</a>
+  <a href="#store">Instance Store</a>
+  <a href="#efs">EFS</a>
+  <a href="#compare">3종 비교</a>
+  <a href="#qa">예상 문제</a>
+  <a href="#summary">요약·TIP</a>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero" id="top">
+    <div class="chips">
+      <span class="chip">Week 1 · 스토리지</span>
+      <span class="chip alt">비교 중심 정리</span>
+    </div>
+    <h1>EBS · AMI · Instance Store · EFS</h1>
+    <p>AWS 스토리지의 4대 축. 시험은 <b>"어떤 상황 → 어떤 스토리지"</b>를 고르는 문제로 나와.
+       각각의 <b>지속성·AZ 범위·연결 방식·성능</b> 차이를 표로 확실히 구분하는 게 핵심이야.</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="n">3종</div><div class="l">EBS · Instance Store · EFS</div></div>
+      <div class="stat"><div class="n">6개</div><div class="l">EBS 볼륨 유형</div></div>
+      <div class="stat"><div class="n">9개</div><div class="l">시험 예상 문제</div></div>
+    </div>
+  </header>
+
+  <!-- STORAGE INTRO -->
+  <section id="storage">
+    <div class="sec-label">Storage 101</div>
+    <h2>그래서 "스토리지"가 뭔데?</h2>
+    <p class="sec-desc">스토리지(storage)는 한마디로 <b>데이터를 저장해두는 공간</b>이야. EC2가 "일하는 컴퓨터(CPU + 메모리)"라면, 스토리지는 그 컴퓨터가 <b>파일·데이터를 올려두고 읽고 쓰는 디스크</b>에 해당해.</p>
+
+    <div class="callout callout-blue">
+      <span class="icon">🧠</span>
+      <div class="text"><strong>프론트 개발자 비유:</strong> 브라우저에도 데이터를 저장하는 곳이 계층별로 있잖아 — <code>메모리 변수</code>(껐다 켜면 사라짐) → <code>sessionStorage</code>(탭 닫으면 사라짐) → <code>localStorage / IndexedDB</code>(영구). AWS 스토리지도 정확히 이 <b>"얼마나 오래 남는가 + 누가 접근 가능한가"</b> 축으로 나뉜다고 보면 이해가 빨라.</div>
+    </div>
+
+    <h3 class="sub">스토리지를 나누는 3가지 기준</h3>
+    <div class="grid">
+      <div class="card c-aws">
+        <div class="card-top"><span class="badge">💾 저장 방식</span></div>
+        <h3>블록 vs 파일 vs 객체</h3>
+        <ul>
+          <li><span class="dot">›</span><b>블록</b>: OS가 "디스크"로 인식 (EBS, Instance Store) — DB·부팅용</li>
+          <li><span class="dot">›</span><b>파일</b>: 폴더·파일 구조로 공유 (EFS) — NFS 마운트</li>
+          <li><span class="dot">›</span><b>객체</b>: 통째로 넣고 URL로 꺼냄 (S3) — 이번 범위 밖</li>
+        </ul>
+      </div>
+      <div class="card c-green">
+        <div class="card-top"><span class="badge">⏳ 지속성</span></div>
+        <h3>영구 vs 임시</h3>
+        <p class="analogy">"localStorage냐 메모리 변수냐"</p>
+        <ul>
+          <li><span class="dot">›</span><b>영구(persistent)</b>: 인스턴스 꺼져도 데이터 유지 (EBS, EFS)</li>
+          <li><span class="dot">›</span><b>임시(ephemeral)</b>: 인스턴스 종료 시 소실 (Instance Store)</li>
+        </ul>
+      </div>
+      <div class="card c-purple">
+        <div class="card-top"><span class="badge">🌐 접근 범위</span></div>
+        <h3>1대 vs 여러 대</h3>
+        <ul>
+          <li><span class="dot">›</span><b>단일 인스턴스</b> 전용 (EBS 기본, Instance Store)</li>
+          <li><span class="dot">›</span><b>여러 인스턴스·여러 AZ</b> 동시 공유 (EFS)</li>
+          <li><span class="dot">›</span>이 축이 시험 정답을 가장 많이 가른다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="icon">💡</span>
+      <div class="text"><strong>이번 가이드의 핵심:</strong> EBS · Instance Store · EFS는 결국 위 3가지 기준에서 <b>어디에 위치하느냐</b>만 다른 거야. 아래에서 하나씩 살펴보고, 마지막에 한 표로 비교할게.</div>
+    </div>
+  </section>
+
+  <!-- EBS -->
+  <section id="ebs">
+    <div class="sec-label">Elastic Block Store</div>
+    <h2>EBS 핵심 개념</h2>
+    <p class="sec-desc">EBS는 EC2에 붙이는 <b>네트워크 드라이브</b>야. 물리적으로 붙은 게 아니라 네트워크로 연결되기 때문에 인스턴스와 분리·재연결이 가능해. 대신 이 특성 때문에 <b>AZ에 묶인다</b>는 제약이 생겨.</p>
+
+    <div class="grid">
+      <div class="card c-blue">
+        <div class="card-top"><span class="badge">📍 AZ 고정</span></div>
+        <h3>단일 AZ에 종속</h3>
+        <p class="analogy">"us-east-1a의 볼륨은 us-east-1a의 인스턴스에만"</p>
+        <ul>
+          <li><span class="dot">›</span>다른 AZ 인스턴스에 직접 연결 <b>불가</b></li>
+          <li><span class="dot">›</span>AZ 이동하려면 <b>스냅샷 → 다른 AZ에서 복원</b></li>
+          <li><span class="dot">›</span>스냅샷은 리전 간 복사도 가능</li>
+        </ul>
+      </div>
+      <div class="card c-green">
+        <div class="card-top"><span class="badge">🗑 종료 동작</span></div>
+        <h3>DeleteOnTermination</h3>
+        <p class="analogy">"루트는 지워지고, 추가 볼륨은 남는다"</p>
+        <ul>
+          <li><span class="dot">›</span>루트 볼륨: 기본값 <b class="mono">true</b> (삭제)</li>
+          <li><span class="dot">›</span>추가 EBS: 기본값 <b class="mono">false</b> (보존)</li>
+          <li><span class="dot">›</span>콘솔에서 이 플래그 변경 가능</li>
+        </ul>
+      </div>
+      <div class="card c-purple">
+        <div class="card-top"><span class="badge">🔗 Multi-Attach</span></div>
+        <h3>다중 연결</h3>
+        <p class="analogy">"io1/io2만, 같은 AZ, 최대 16대"</p>
+        <ul>
+          <li><span class="dot">›</span>하나의 볼륨을 여러 EC2에 <b>동시 연결</b></li>
+          <li><span class="dot">›</span><b>io1 / io2</b> 유형에서만 지원</li>
+          <li><span class="dot">›</span>같은 AZ 내 최대 16 인스턴스</li>
+          <li><span class="dot">›</span>클러스터 인식 파일시스템 필요</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="icon">💡</span>
+      <div class="text"><strong>가장 헷갈리는 함정:</strong> "다른 AZ의 인스턴스에 연결이 안 된다" → 문제 상황이 아니라 <b>정상 동작</b>이야. EBS는 태생적으로 AZ에 묶여 있어. 이동하려면 스냅샷을 떠서 다른 AZ에서 복원해야 해.</div>
+    </div>
+  </section>
+
+  <!-- VOLUME TYPES -->
+  <section id="voltypes">
+    <div class="sec-label">EBS Volume Types</div>
+    <h2>EBS 볼륨 유형 비교</h2>
+    <p class="sec-desc">시험 단골. <b>부팅 볼륨 가능 여부 = SSD냐 HDD냐</b>로 갈려. SSD 계열(gp·io)만 부팅 볼륨이 될 수 있고, HDD 계열(st1·sc1)은 안 돼.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>유형</th><th>분류</th><th>최대 IOPS</th><th>부팅 볼륨</th><th>주 용도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="key">gp3</td><td>SSD (범용)</td><td>16,000</td>
+            <td><span class="yes">✔ 가능</span></td><td>기본 추천 · IOPS/처리량 독립 설정</td>
+          </tr>
+          <tr>
+            <td class="key">gp2</td><td>SSD (범용)</td><td>16,000</td>
+            <td><span class="yes">✔ 가능</span></td><td>구세대 범용 · <b>크기 = IOPS</b> (3/GB)</td>
+          </tr>
+          <tr>
+            <td class="key">io1</td><td>SSD (고성능)</td><td>64,000</td>
+            <td><span class="yes">✔ 가능</span></td><td>고성능 DB · Multi-Attach 지원</td>
+          </tr>
+          <tr>
+            <td class="key">io2 Block Express</td><td>SSD (최고성능)</td><td>256,000</td>
+            <td><span class="yes">✔ 가능</span></td><td>초고성능 DB · Multi-Attach 지원</td>
+          </tr>
+          <tr>
+            <td class="key">st1</td><td>HDD (처리량)</td><td>500</td>
+            <td><span class="no">✘ 불가</span></td><td>빅데이터 · 로그 · 데이터 웨어하우스</td>
+          </tr>
+          <tr>
+            <td class="key">sc1</td><td>HDD (콜드)</td><td>250</td>
+            <td><span class="no">✘ 불가</span></td><td>접근 빈도 낮은 데이터 · 최저 비용</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="icon">⚠️</span>
+      <div class="text"><strong>gp2 IOPS 캡 함정:</strong> gp2는 <b>3 IOPS/GB</b>지만 <b>최대 16,000 IOPS</b>에서 잘려. 약 5,334GB(≈5.3TB)면 이미 최대치야. 그래서 <b>8TB gp2는 이미 16,000 캡</b> 상태라 크기를 더 늘려도 IOPS가 안 올라가. IOPS를 더 원하면 <b>gp3나 io1/io2로 마이그레이션</b>해야 해.</div>
+    </div>
+  </section>
+
+  <!-- AMI -->
+  <section id="ami">
+    <div class="sec-label">Amazon Machine Image</div>
+    <h2>AMI</h2>
+    <p class="sec-desc">AMI는 EC2를 띄우는 <b>템플릿</b>(OS + 설정 + 앱 사전 패키징). 프론트로 치면 프로젝트를 부트스트랩하는 <b>보일러플레이트 템플릿</b>이랑 비슷해. 중요한 건 <b>AMI는 리전 단위</b>라는 점이야.</p>
+
+    <div class="grid">
+      <div class="card c-aws">
+        <div class="card-top"><span class="badge">🌎 리전 종속</span></div>
+        <h3>AMI는 리전에 묶인다</h3>
+        <ul>
+          <li><span class="dot">›</span>만든 리전에서만 인스턴스 시작 가능</li>
+          <li><span class="dot">›</span>다른 리전에서 쓰려면 <b>AMI 복사(Copy)</b></li>
+          <li><span class="dot">›</span>복사하면 새 리전에 <b>새 AMI ID</b> 생성</li>
+        </ul>
+      </div>
+      <div class="card c-gray">
+        <div class="card-top"><span class="badge">⚙️ 구성</span></div>
+        <h3>AMI에 담기는 것</h3>
+        <ul>
+          <li><span class="dot">›</span>루트 볼륨의 EBS 스냅샷</li>
+          <li><span class="dot">›</span>실행 권한(누가 launch 가능한지)</li>
+          <li><span class="dot">›</span>블록 디바이스 매핑</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="icon">🧠</span>
+      <div class="text"><strong>기억법:</strong> "us-east-1의 AMI로 <b>모든 리전</b>에서 시작 가능?" → <b>거짓</b>. AMI = 리전 스코프. 다른 리전은 복사 먼저. (참고: <b>EBS 스냅샷도 리전 단위</b>, <b>EBS 볼륨은 AZ 단위</b>로 스코프가 계단식으로 커진다고 외우면 편해.)</div>
+    </div>
+  </section>
+
+  <!-- INSTANCE STORE -->
+  <section id="store">
+    <div class="sec-label">EC2 Instance Store</div>
+    <h2>EC2 Instance Store</h2>
+    <p class="sec-desc">호스트 서버에 <b>물리적으로 붙은 로컬 디스크</b>. 네트워크를 안 타서 <b>초고성능(수백만 IOPS)</b>이지만, 인스턴스가 종료/중지되면 <b>데이터가 사라지는 임시(ephemeral) 저장소</b>야.</p>
+
+    <div class="grid">
+      <div class="card c-red">
+        <div class="card-top"><span class="badge">⚡ 초고성능</span></div>
+        <h3>물리적 로컬 디스크</h3>
+        <p class="analogy">"네트워크를 안 거치는 직결 SSD"</p>
+        <ul>
+          <li><span class="dot">›</span>EBS보다 훨씬 높은 IOPS/처리량</li>
+          <li><span class="dot">›</span>수십만~수백만 IOPS 가능</li>
+          <li><span class="dot">›</span>버퍼·캐시·스크래치 데이터에 최적</li>
+        </ul>
+      </div>
+      <div class="card c-gray">
+        <div class="card-top"><span class="badge">💨 임시</span></div>
+        <h3>종료 시 데이터 소실</h3>
+        <p class="analogy">"인스턴스와 운명 공동체"</p>
+        <ul>
+          <li><span class="dot">›</span>인스턴스 종료·중지 시 <b>데이터 손실</b></li>
+          <li><span class="dot">›</span>영구 저장에는 <b>부적합</b></li>
+          <li><span class="dot">›</span>백업/복제는 직접 책임져야 함</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- EFS -->
+  <section id="efs">
+    <div class="sec-label">Elastic File System</div>
+    <h2>EFS</h2>
+    <p class="sec-desc">관리형 <b>NFS 파일 시스템</b>. EBS와 달리 <b>여러 AZ에 걸친 수백~수천 개 EC2가 동시에</b> 같은 데이터를 마운트할 수 있어. "공유 파일 스토리지"가 필요하면 정답은 거의 EFS야.</p>
+
+    <div class="grid">
+      <div class="card c-green">
+        <div class="card-top"><span class="badge">🔀 다중 AZ 공유</span></div>
+        <h3>NFS로 동시 마운트</h3>
+        <p class="analogy">"여러 AZ · 여러 EC2 → 하나의 파일시스템"</p>
+        <ul>
+          <li><span class="dot">›</span>NFS 프로토콜로 마운트</li>
+          <li><span class="dot">›</span>수백~수천 인스턴스 동시 접근</li>
+          <li><span class="dot">›</span>여러 AZ 걸쳐 공유 가능</li>
+        </ul>
+      </div>
+      <div class="card c-purple">
+        <div class="card-top"><span class="badge">📈 자동 확장</span></div>
+        <h3>용량 자동 스케일</h3>
+        <ul>
+          <li><span class="dot">›</span>용량 프로비저닝 불필요 (사용한 만큼)</li>
+          <li><span class="dot">›</span><b>Linux 전용</b> (Windows 미지원)</li>
+          <li><span class="dot">›</span>gp2 대비 약 3배 비용 (스토리지 클래스로 절감)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="icon">🧠</span>
+      <div class="text"><strong>키워드 매칭:</strong> "여러 AZ" + "동일 데이터 공유" + "NFS" → <b>EFS</b>. 반대로 "하나의 인스턴스" + "부팅/DB" → <b>EBS</b>. "임시 고성능 캐시" → <b>Instance Store</b>.</div>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section id="compare">
+    <div class="sec-label">Head to Head</div>
+    <h2>EBS vs Instance Store vs EFS</h2>
+    <p class="sec-desc">이 표 하나만 확실히 외우면 이번 주 문제의 절반은 바로 풀려. 특히 <b>지속성 / AZ 범위 / 동시 연결</b> 세 열이 정답을 가른다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th><th>EBS</th><th>Instance Store</th><th>EFS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="key">스토리지 타입</td>
+            <td>네트워크 블록</td><td>물리 로컬 블록</td><td>관리형 파일(NFS)</td>
+          </tr>
+          <tr>
+            <td class="key">지속성</td>
+            <td><span class="yes">영구</span></td>
+            <td><span class="no">임시(종료 시 소실)</span></td>
+            <td><span class="yes">영구</span></td>
+          </tr>
+          <tr>
+            <td class="key">범위(Scope)</td>
+            <td><span class="pill">단일 AZ</span></td>
+            <td>인스턴스에 물리 종속</td>
+            <td><span class="pill">다중 AZ</span></td>
+          </tr>
+          <tr>
+            <td class="key">동시 연결</td>
+            <td>1대 (io1/io2 Multi-Attach 시 최대 16)</td>
+            <td>해당 인스턴스만</td>
+            <td><b>수백~수천 대</b></td>
+          </tr>
+          <tr>
+            <td class="key">성능</td>
+            <td>중~고 (io2 256K IOPS)</td>
+            <td><b>초고성능(수십만+)</b></td>
+            <td>확장형(자동)</td>
+          </tr>
+          <tr>
+            <td class="key">OS</td>
+            <td>Linux / Windows</td>
+            <td>Linux / Windows</td>
+            <td><b>Linux 전용</b></td>
+          </tr>
+          <tr>
+            <td class="key">대표 용도</td>
+            <td>DB · 부팅 볼륨 · 단일 인스턴스 데이터</td>
+            <td>캐시 · 버퍼 · 임시 스크래치</td>
+            <td>다중 AZ 공유 파일 · 콘텐츠 공유</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <span class="icon">💡</span>
+      <div class="text"><strong>한 줄 구분:</strong> <b>EBS</b>=한 인스턴스 전용 영구 드라이브(AZ 고정) · <b>Instance Store</b>=빠르지만 사라지는 임시 로컬 디스크 · <b>EFS</b>=여러 AZ가 나눠 쓰는 공유 파일함.</div>
+    </div>
+  </section>
+
+  <!-- Q&A -->
+  <section id="qa">
+    <div class="sec-label">Practice Questions</div>
+    <h2>시험 예상 문제 Q&amp;A</h2>
+    <p class="sec-desc">이번에 어렵다고 한 9문제. 클릭해서 정답·해설·시험 팁 확인해봐.</p>
+
+    <details>
+      <summary>
+        <div class="q-num">1</div>
+        <div class="q-text"><span class="mono">us-east-1a</span>에서 EC2를 종료했고 연결됐던 EBS 볼륨을 사용할 수 있게 됨. 팀원이 <span class="mono">us-east-1b</span>의 EC2에 연결하려는데 안 됨. 원인은?</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답</div>
+        <div class="a-val">📍 <span class="hl">EBS 볼륨은 단일 AZ에 묶여 있기 때문</span></div>
+        <div class="a-exp">EBS 볼륨은 생성된 AZ 안에서만 인스턴스에 붙일 수 있어. <b>us-east-1a의 볼륨은 us-east-1b의 인스턴스에 직접 연결 불가</b>. 옮기려면 <b>스냅샷을 만들고 → us-east-1b에서 그 스냅샷으로 볼륨을 복원</b>해서 붙여야 해.</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> "다른 AZ에 연결이 안 된다"는 버그가 아니라 <b>정상 동작</b>. 이동 방법을 묻는 문제엔 항상 <b>스냅샷</b>이 정답 키워드.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <div class="q-num">2</div>
+        <div class="q-text">루트 볼륨 + 추가 EBS 볼륨에 데이터 저장. 한 달 뒤 인스턴스를 종료할 때, 각 EBS 볼륨의 <b>기본 동작</b>은?</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답</div>
+        <div class="a-val">🗑 <span class="hl">루트=삭제, 추가 볼륨=보존</span></div>
+        <div class="a-exp"><b>루트 볼륨</b>은 <b class="mono">DeleteOnTermination = true</b>가 기본이라 종료 시 <b>같이 삭제</b>돼. 반면 나중에 붙인 <b>추가 EBS 볼륨</b>은 <b class="mono">DeleteOnTermination = false</b>가 기본이라 인스턴스가 사라져도 <b>볼륨은 남아</b>. (두 플래그 모두 설정으로 변경 가능)</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> "루트는 지워지고 데이터 볼륨은 살아남는다"로 외우기. 반대로 "종료해도 루트 데이터 유지하려면?" → <b>DeleteOnTermination을 false로</b>.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <div class="q-num">3</div>
+        <div class="q-text"><span class="mono">us-east-1</span>(N.Virginia)의 AMI를 사용해 <b>모든 AWS 리전</b>에서 EC2를 시작할 수 있다. (True / False)</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답</div>
+        <div class="a-val"><span class="false-tag">❌ 거짓</span><span class="hl">AMI는 리전 단위</span></div>
+        <div class="a-exp">AMI는 <b>만든 리전에서만</b> 인스턴스를 시작할 수 있어. 다른 리전에서 쓰려면 먼저 <b>AMI를 대상 리전으로 복사(Copy AMI)</b>해야 하고, 복사하면 <b>새 리전에 새 AMI ID</b>가 생성돼.</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> 스코프 계단: <b>EBS 볼륨=AZ</b> · <b>스냅샷/AMI=리전</b> · <b>IAM=글로벌</b>. "cross-region"이 나오면 AMI는 <b>Copy</b> 필요.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <div class="q-num">4</div>
+        <div class="q-text">EC2 인스턴스를 생성할 때 <b>부팅(루트) 볼륨</b>으로 쓸 수 있는 EBS 볼륨 유형은?</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답</div>
+        <div class="a-val">💽 <span class="hl">SSD 계열 — gp2 / gp3 / io1 / io2</span></div>
+        <div class="a-exp">부팅 볼륨이 되려면 <b>SSD 계열</b>이어야 해. <b>gp2, gp3, io1, io2</b>는 가능하고, <b>HDD 계열인 st1·sc1은 부팅 볼륨 불가</b>. HDD는 순차 처리량용(빅데이터·로그)이라 OS 부팅에는 못 써.</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> "boot volume 가능한 유형?" → <b>SSD만(gp·io)</b>. st1/sc1이 보기에 있으면 그게 함정 오답.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <div class="q-num">5</div>
+        <div class="q-text">EBS 다중 연결(Multi-Attach)이란 무엇인가?</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답</div>
+        <div class="a-val">🔗 <span class="hl">하나의 볼륨을 같은 AZ 내 여러 EC2에 동시 연결</span></div>
+        <div class="a-exp">단일 <b>io1/io2</b> 볼륨을 <b>같은 AZ 안에서 최대 16개 EC2 인스턴스</b>에 동시에 붙이는 기능. 클러스터형 Linux 애플리케이션(고가용성 처리)에서 써. 여러 인스턴스가 동시에 쓰기 때문에 <b>클러스터 인식 파일시스템</b>이 필요하고, 일반 XFS/EXT4는 부적합.</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> Multi-Attach = <b>io1/io2 전용</b> · <b>같은 AZ</b> · <b>최대 16대</b>. "gp2로 Multi-Attach" 같은 보기는 무조건 오답.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <div class="q-num">6</div>
+        <div class="q-text">8TB <span class="mono">gp2</span> 볼륨을 프로비전했는데 IOPS가 부족하다. 성능을 높이는 방법이 <b>아닌</b> 것은?</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답 (방법이 아닌 것)</div>
+        <div class="a-val">🚫 <span class="hl">gp2 볼륨 크기를 더 늘리기</span></div>
+        <div class="a-exp">gp2는 <b>3 IOPS/GB</b>지만 <b>최대 16,000 IOPS에서 캡</b>돼. 16,000 ÷ 3 ≈ <b>5,334GB(약 5.3TB)</b>에서 이미 최대치에 도달하거든. <b>8TB(8,000GB)는 이미 16,000 IOPS 캡</b> 상태라 크기를 더 키워도 IOPS가 안 올라가. 그래서 "크기 늘리기"는 성능 향상 방법이 아니야.<br><br>대신 <b>gp3로 마이그레이션</b>(크기와 무관하게 IOPS 별도 설정) 하거나 <b>io1/io2로 마이그레이션</b>(더 높은 IOPS)하는 게 올바른 방법이야.</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> gp2에서 "IOPS 부족 + 이미 큰 볼륨" → 크기 증설은 함정. 정답 액션은 <b>gp3/io 마이그레이션</b>. gp2는 <b>크기=IOPS(단 16,000 캡)</b> 공식을 꼭 기억.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <div class="q-num">7</div>
+        <div class="q-text">여러 AZ에 분산된 EC2 집합이 대규모 데이터셋을 처리 중. 모든 EC2에서 <b>NFS 드라이브로 동일 데이터</b>에 접근하게 하려면?</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답</div>
+        <div class="a-val">🔀 <span class="hl">Amazon EFS</span></div>
+        <div class="a-exp"><b>여러 AZ</b>에 걸친 <b>여러 EC2</b>가 <b>동일 데이터</b>를 <b>NFS</b>로 공유해야 하는 정확히 그 시나리오가 EFS야. EBS는 단일 AZ·기본 1대 연결이라 부적합하고, Instance Store는 임시 로컬이라 공유가 안 돼.</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> "여러 AZ" + "공유" + "NFS" 3개 키워드가 뜨면 반사적으로 <b>EFS</b>. (Linux 전용인 점도 같이 기억)</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <div class="q-num">8</div>
+        <div class="q-text">EC2 앱용 <b>고성능 로컬 캐시</b>가 필요. 인스턴스 종료 시 캐시가 사라져도 무방. 어떤 스토리지를 권장?</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답</div>
+        <div class="a-val">⚡ <span class="hl">EC2 Instance Store</span></div>
+        <div class="a-exp">"<b>고성능</b>" + "<b>로컬</b>" + "<b>사라져도 무방</b>" = Instance Store의 교과서 정의야. 호스트에 물리적으로 붙어 있어 초고성능이고, 종료 시 데이터가 사라지는 임시 특성이 <b>캐시/버퍼</b> 용도와 완벽히 맞아. EBS를 쓰면 영구성 비용만 낭비돼.</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> "캐시/버퍼/스크래치 + 데이터 손실 OK + 고성능" → <b>Instance Store</b>. "손실되면 안 됨"이 붙으면 EBS로 바뀜.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <div class="q-num">9</div>
+        <div class="q-text">기본 저장소에 <b>310,000 IOPS</b>를 요구하는 고성능 데이터베이스. 무엇을 추천?</div>
+        <div class="q-arrow">▶</div>
+      </summary>
+      <div class="q-answer">
+        <div class="a-label">정답</div>
+        <div class="a-val">⚡ <span class="hl">EC2 Instance Store</span></div>
+        <div class="a-exp">EBS의 최상위 유형인 <b>io2 Block Express도 최대 256,000 IOPS</b>라, 단일 EBS 볼륨으로는 <b>310,000 IOPS를 낼 수 없어</b>. 이 수준의 IOPS는 물리적으로 직결된 <b>Instance Store</b>만 감당해(수십만~수백만 IOPS 가능). 단, 임시 저장소라 <b>복제·백업은 애플리케이션 레벨에서</b> 직접 책임져야 해.</div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> IOPS 요구가 <b>256,000을 초과</b>하면 EBS로는 불가 → <b>Instance Store</b>. "수십만 IOPS 이상"이라는 숫자가 곧 힌트.</div>
+      </div>
+    </details>
+  </section>
+
+  <!-- SUMMARY -->
+  <section id="summary">
+    <div class="sec-label">Cheat Sheet</div>
+    <h2>빠른 요약 &amp; 시험 TIP</h2>
+    <p class="sec-desc">시험장 직전에 훑어볼 압축 카드 + 키워드→정답 규칙.</p>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-key">📍 EBS 범위</div>
+        <div class="summary-val">단일 AZ에 고정. 다른 AZ로 옮기려면 스냅샷 → 복원.</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">🗑 종료 시 삭제</div>
+        <div class="summary-val">루트=true(삭제), 추가 EBS=false(보존)가 기본값.</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">💽 부팅 볼륨</div>
+        <div class="summary-val">SSD(gp2·gp3·io1·io2)만 가능. HDD(st1·sc1) 불가.</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">⚠️ gp2 IOPS 캡</div>
+        <div class="summary-val">3 IOPS/GB, 최대 16,000. ≈5.3TB부터 이미 캡.</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">🔗 Multi-Attach</div>
+        <div class="summary-val">io1/io2 전용, 같은 AZ, 최대 16 인스턴스.</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">🌎 AMI 범위</div>
+        <div class="summary-val">리전 단위. 타 리전은 Copy AMI 필요.</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">⚡ Instance Store</div>
+        <div class="summary-val">초고성능·임시. 종료 시 소실. 캐시/버퍼용.</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-key">🔀 EFS</div>
+        <div class="summary-val">NFS·다중 AZ·다중 EC2 공유. Linux 전용.</div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-header">🎯 키워드 → 정답 매칭</div>
+      <ul class="tip-list">
+        <li><span class="tip-kw">다른 AZ 인스턴스에 EBS 연결 안 됨</span> <span class="arrow">→</span> 정상 동작(AZ 고정), 스냅샷으로 이동</li>
+        <li><span class="tip-kw">종료 시 루트 데이터 유지</span> <span class="arrow">→</span> DeleteOnTermination = false</li>
+        <li><span class="tip-kw">타 리전에서 EC2 시작</span> <span class="arrow">→</span> AMI Copy 후 사용</li>
+        <li><span class="tip-kw">부팅 볼륨 가능 유형</span> <span class="arrow">→</span> gp2·gp3·io1·io2 (SSD)</li>
+        <li><span class="tip-kw">gp2 IOPS 부족 + 이미 대용량</span> <span class="arrow">→</span> gp3/io로 마이그레이션(크기 증설 ✘)</li>
+        <li><span class="tip-kw">여러 AZ · 공유 · NFS</span> <span class="arrow">→</span> EFS</li>
+        <li><span class="tip-kw">고성능 캐시 · 손실 OK</span> <span class="arrow">→</span> Instance Store</li>
+        <li><span class="tip-kw">256,000 IOPS 초과 요구</span> <span class="arrow">→</span> Instance Store (EBS 불가)</li>
+        <li><span class="tip-kw">단일 볼륨 여러 EC2 동시 연결</span> <span class="arrow">→</span> Multi-Attach(io1/io2)</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="foot">DVA-C02 · EBS / AMI / Instance Store / EFS · 오프라인 학습용 · 시험까지 화이팅 💪</div>
+
+</div>
+
+<script>
+  document.querySelectorAll('nav a').forEach(function(a){
+    a.addEventListener('click', function(e){
+      var id = a.getAttribute('href');
+      if(id && id.startsWith('#')){
+        e.preventDefault();
+        var el = document.querySelector(id);
+        if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
