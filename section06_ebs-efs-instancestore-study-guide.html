@@ -564,7 +564,13 @@
         <div class="a-label">정답 (방법이 아닌 것)</div>
         <div class="a-val">🚫 <span class="hl">gp2 볼륨 크기를 더 늘리기</span></div>
         <div class="a-exp">gp2는 <b>3 IOPS/GB</b>지만 <b>최대 16,000 IOPS에서 캡</b>돼. 16,000 ÷ 3 ≈ <b>5,334GB(약 5.3TB)</b>에서 이미 최대치에 도달하거든. <b>8TB(8,000GB)는 이미 16,000 IOPS 캡</b> 상태라 크기를 더 키워도 IOPS가 안 올라가. 그래서 "크기 늘리기"는 성능 향상 방법이 아니야.<br><br>대신 <b>gp3로 마이그레이션</b>(크기와 무관하게 IOPS 별도 설정) 하거나 <b>io1/io2로 마이그레이션</b>(더 높은 IOPS)하는 게 올바른 방법이야.</div>
-        <div class="a-tip"><strong>🎯 시험 팁</strong> gp2에서 "IOPS 부족 + 이미 큰 볼륨" → 크기 증설은 함정. 정답 액션은 <b>gp3/io 마이그레이션</b>. gp2는 <b>크기=IOPS(단 16,000 캡)</b> 공식을 꼭 기억.</div>
+        <div class="callout callout-blue">
+          <div class="icon">🤔</div>
+          <div class="text"><b>gp2가 아니라 gp3였어도 정답이 같을까?</b> — <b>그래도 정답은 "볼륨 크기 늘리기"</b>야. 단, 이유가 달라.<br>
+          gp3는 <b>IOPS가 볼륨 크기와 완전히 분리(decoupled)</b>돼 있어서 기본 3,000 IOPS를 제공하고, 크기와 무관하게 <b>IOPS를 독립적으로 프로비저닝</b>(최대 16,000)해. 그러니 크기를 늘려도 IOPS엔 애초에 영향이 없어.<br><br>
+          정리하면 → <b>gp2</b>는 "8TB면 이미 16,000 캡에 도달해서" 안 되고, <b>gp3</b>는 "원래 크기와 IOPS가 무관해서" 안 돼. gp3에서의 올바른 해결책은 그냥 <b>IOPS 값을 더 높게 프로비저닝</b>하는 거야.</div>
+        </div>
+        <div class="a-tip"><strong>🎯 시험 팁</strong> gp2에서 "IOPS 부족 + 이미 큰 볼륨" → 크기 증설은 함정. 정답 액션은 <b>gp3/io 마이그레이션</b>. gp2는 <b>크기=IOPS(단 16,000 캡)</b>, gp3는 <b>크기와 IOPS 무관(별도 프로비저닝)</b> 공식을 꼭 기억.</div>
       </div>
     </details>
 
